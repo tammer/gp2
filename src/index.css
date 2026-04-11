@@ -498,3 +498,147 @@ code {
   white-space: nowrap;
   border: 0;
 }
+
+.form-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  align-items: center;
+}
+
+.textarea--instruction {
+  font-family: ui-monospace, 'Cascadia Code', 'Source Code Pro', Menlo, monospace;
+  font-size: 0.9rem;
+  line-height: 1.45;
+}
+
+.instruction-view__toolbar {
+  margin-bottom: 1rem;
+}
+
+.instruction-empty {
+  padding: 1.25rem;
+  border: 1px dashed var(--border);
+  border-radius: var(--radius);
+}
+
+.instruction-empty p {
+  margin: 0;
+}
+
+.instruction-markdown {
+  padding: 1.25rem 1.35rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface);
+  font-size: 1rem;
+  line-height: 1.6;
+}
+
+.instruction-markdown :first-child {
+  margin-top: 0;
+}
+
+.instruction-markdown :last-child {
+  margin-bottom: 0;
+}
+
+.instruction-markdown h1,
+.instruction-markdown h2,
+.instruction-markdown h3,
+.instruction-markdown h4 {
+  margin: 1.25em 0 0.5em;
+  line-height: 1.3;
+  font-weight: 650;
+}
+
+.instruction-markdown h1 {
+  font-size: 1.5rem;
+  border-bottom: 1px solid var(--border);
+  padding-bottom: 0.35rem;
+}
+
+.instruction-markdown h2 {
+  font-size: 1.25rem;
+}
+
+.instruction-markdown h3 {
+  font-size: 1.1rem;
+}
+
+.instruction-markdown p {
+  margin: 0.65em 0;
+}
+
+.instruction-markdown ul,
+.instruction-markdown ol {
+  margin: 0.65em 0;
+  padding-left: 1.35rem;
+}
+
+.instruction-markdown li {
+  margin: 0.25em 0;
+}
+
+.instruction-markdown li > p {
+  margin: 0.25em 0;
+}
+
+.instruction-markdown blockquote {
+  margin: 0.75em 0;
+  padding: 0.35em 0 0.35em 1rem;
+  border-left: 4px solid var(--accent);
+  color: var(--muted);
+}
+
+.instruction-markdown hr {
+  border: none;
+  border-top: 1px solid var(--border);
+  margin: 1.5rem 0;
+}
+
+.instruction-markdown pre {
+  margin: 0.85em 0;
+  padding: 0.85rem 1rem;
+  overflow-x: auto;
+  border-radius: var(--radius);
+  background: var(--bg);
+  border: 1px solid var(--border);
+  font-size: 0.88rem;
+  line-height: 1.5;
+}
+
+.instruction-markdown pre code {
+  padding: 0;
+  background: none;
+  font-size: inherit;
+}
+
+.instruction-markdown :not(pre) > code {
+  font-size: 0.9em;
+}
+
+.instruction-markdown table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 1em 0;
+  font-size: 0.92rem;
+}
+
+.instruction-markdown th,
+.instruction-markdown td {
+  border: 1px solid var(--border);
+  padding: 0.45rem 0.65rem;
+  text-align: left;
+}
+
+.instruction-markdown th {
+  background: var(--accent-muted);
+  font-weight: 600;
+}
+
+.instruction-markdown img {
+  max-width: 100%;
+  height: auto;
+  border-radius: 4px;
+}
