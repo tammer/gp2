@@ -33,7 +33,7 @@ export function ArticleCard({
   const isSaved = article.saved === true
   const isRead = article.read === true
   const busy = busyRead || busySaved
-  const showMarkRead = !isRead
+  const showMarkRead = view !== 'saved' && !isRead
   const showUnmarkRead = view === 'read' && isRead
 
   return (
