@@ -33,7 +33,7 @@ create table public.sources (
   user_id uuid not null references auth.users (id) on delete cascade,
   url text not null,
   use_rss boolean not null default false,
-  category text,
+  category_id uuid references public.categories (id) on delete set null,
   instruction text not null default ''
 );
 
@@ -69,6 +69,9 @@ create index news_articles_saved_idx
 create index categories_user_name_idx on public.categories (user_id, name);
 
 create index sources_user_idx on public.sources (user_id);
+
+create index sources_category_idx on public.sources (category_id)
+  where category_id is not null;
 
 -- Row Level Security
 alter table public.categories enable row level security;

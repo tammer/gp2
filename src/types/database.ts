@@ -25,7 +25,7 @@ export type Source = {
   user_id: string
   url: string
   use_rss: boolean
-  category: string | null
+  category_id: string | null
   instruction: string
 }
 

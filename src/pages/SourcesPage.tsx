@@ -2,7 +2,7 @@ import { useCallback, useEffect, useState, type FormEvent } from 'react'
 import { Navigate } from 'react-router-dom'
 import { useAuth } from '@/lib/use-auth'
 import { supabase, supabaseConfigured } from '@/lib/supabase'
-import type { Source } from '@/types/database'
+import type { Category, Source } from '@/types/database'
 
 function isProbablyUrl(s: string): boolean {
   try {
@@ -19,9 +19,10 @@ export function SourcesPage() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
+  const [categories, setCategories] = useState<Category[]>([])
   const [url, setUrl] = useState('')
   const [useRss, setUseRss] = useState(false)
-  const [category, setCategory] = useState('')
+  const [categoryId, setCategoryId] = useState('')
   const [instruction, setInstruction] = useState('')
   const [formError, setFormError] = useState<string | null>(null)
   const [adding, setAdding] = useState(false)
@@ -29,11 +30,21 @@ export function SourcesPage() {
   const [editingId, setEditingId] = useState<string | null>(null)
   const [editUrl, setEditUrl] = useState('')
   const [editUseRss, setEditUseRss] = useState(false)
-  const [editCategory, setEditCategory] = useState('')
+  const [editCategoryId, setEditCategoryId] = useState('')
   const [editInstruction, setEditInstruction] = useState('')
   const [editBusy, setEditBusy] = useState(false)
 
   const uid = user?.id
+
+  const loadCategories = useCallback(async () => {
+    if (!supabase || !uid) return
+    const { data, error: err } = await supabase
+      .from('categories')
+      .select('id,user_id,name')
+      .eq('user_id', uid)
+      .order('name', { ascending: true })
+    if (!err) setCategories((data ?? []) as Category[])
+  }, [uid])
 
   const load = useCallback(async () => {
     if (!supabase || !uid) return
@@ -41,7 +52,7 @@ export function SourcesPage() {
     setError(null)
     const { data, error: err } = await supabase
       .from('sources')
-      .select('id,user_id,url,use_rss,category,instruction')
+      .select('id,user_id,url,use_rss,category_id,instruction')
       .eq('user_id', uid)
       .order('url', { ascending: true })
     setLoading(false)
@@ -57,8 +68,9 @@ export function SourcesPage() {
       setLoading(false)
       return
     }
+    void loadCategories()
     void load()
-  }, [uid, load])
+  }, [uid, load, loadCategories])
 
   async function onAdd(e: FormEvent) {
     e.preventDefault()
@@ -78,7 +90,7 @@ export function SourcesPage() {
       user_id: uid,
       url: u,
       use_rss: useRss,
-      category: category.trim() || null,
+      category_id: categoryId || null,
       instruction,
     })
     setAdding(false)
@@ -88,7 +100,7 @@ export function SourcesPage() {
     }
     setUrl('')
     setUseRss(false)
-    setCategory('')
+    setCategoryId('')
     setInstruction('')
     void load()
   }
@@ -97,7 +109,7 @@ export function SourcesPage() {
     setEditingId(s.id)
     setEditUrl(s.url)
     setEditUseRss(s.use_rss)
-    setEditCategory(s.category ?? '')
+    setEditCategoryId(s.category_id ?? '')
     setEditInstruction(s.instruction)
     setFormError(null)
   }
@@ -125,7 +137,7 @@ export function SourcesPage() {
       .update({
         url: u,
         use_rss: editUseRss,
-        category: editCategory.trim() || null,
+        category_id: editCategoryId || null,
         instruction: editInstruction,
       })
       .eq('id', editingId)
@@ -175,8 +187,8 @@ export function SourcesPage() {
     <div className="page">
       <h1 className="page-title">Sources</h1>
       <p className="page-lead muted">
-        Feeds and pages for your external ingestor. The <code>category</code> field is a free-form label for routing,
-        not a link to the categories table.
+        Feeds and pages for your external ingestor. Optionally assign each source to a category from your list (same
+        rows as on the home page) so your pipeline can route articles by <code>category_id</code>.
       </p>
 
       <section className="card" aria-labelledby="add-source-heading">
@@ -193,8 +205,15 @@ export function SourcesPage() {
             <span>Use RSS</span>
           </label>
           <label className="field">
-            <span className="field__label">Category label</span>
-            <input className="input" value={category} onChange={(e) => setCategory(e.target.value)} />
+            <span className="field__label">Category</span>
+            <select className="input" value={categoryId} onChange={(e) => setCategoryId(e.target.value)}>
+              <option value="">None</option>
+              {categories.map((c) => (
+                <option key={c.id} value={c.id}>
+                  {c.name}
+                </option>
+              ))}
+            </select>
           </label>
           <label className="field field--full">
             <span className="field__label">Per-source instruction</span>
@@ -263,7 +282,18 @@ export function SourcesPage() {
                         </label>
                         <label className="field">
                           <span className="field__label">Category</span>
-                          <input className="input" value={editCategory} onChange={(e) => setEditCategory(e.target.value)} />
+                          <select
+                            className="input"
+                            value={editCategoryId}
+                            onChange={(e) => setEditCategoryId(e.target.value)}
+                          >
+                            <option value="">None</option>
+                            {categories.map((c) => (
+                              <option key={c.id} value={c.id}>
+                                {c.name}
+                              </option>
+                            ))}
+                          </select>
                         </label>
                         <label className="field field--full">
                           <span className="field__label">Instruction</span>
@@ -298,7 +328,9 @@ export function SourcesPage() {
                       </a>
                     </td>
                     <td>{s.use_rss ? 'Yes' : 'No'}</td>
-                    <td>{s.category ?? '—'}</td>
+                    <td>
+                      {s.category_id ? categories.find((c) => c.id === s.category_id)?.name ?? '—' : '—'}
+                    </td>
                     <td className="sources-table__instruction">{s.instruction || '—'}</td>
                     <td className="sources-table__actions">
                       <button type="button" className="btn btn--secondary btn--small" onClick={() => startEdit(s)}>
