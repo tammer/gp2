@@ -72,11 +72,11 @@ export function ArticleCard({
           ) : null}
         </p>
       </div>
-      <h2 className="article__headline">
+      {/* <h2 className="article__headline">
         <a href={article.url} target="_blank" rel="noopener noreferrer">
           {article.headline}
         </a>
-      </h2>
+      </h2> */}
       <div className="article__section">
         {article.full_summary ? (
           <p className="article__full-summary-body" style={{ margin: 0, whiteSpace: 'pre-wrap' }}>
