@@ -134,7 +134,7 @@ export function InstructionsPage() {
       (
         [
           { id: 'instructions' as const, label: 'Instructions' },
-          { id: 'exclusions' as const, label: 'Show Exclusions' },
+          { id: 'exclusions' as const, label: 'Exclusions' },
         ] as const
       ).map((b) => (
         <button
@@ -173,7 +173,10 @@ export function InstructionsPage() {
 
   return (
     <div className={`page${tab === 'instructions' ? ' page--narrow' : ''}`}>
-      <h1 className="page-title">Filtering Instructions</h1>
+      <h1 className="page-title">Filtering</h1>
+      <div className="view-toggle instructions-page__tabs" role="group" aria-label="Instructions sections">
+        {tabButtons}
+      </div>
       {tab === 'instructions' ? (
         <p className="page-lead muted">Tell the AI what content to filter out.</p>
       ) : (
@@ -181,10 +184,6 @@ export function InstructionsPage() {
           The 25 most recent article exclusions across your categories (newest first).
         </p>
       )}
-
-      <div className="view-toggle instructions-page__tabs" role="group" aria-label="Instructions sections">
-        {tabButtons}
-      </div>
 
       {tab === 'instructions' ? (
         loading ? (
