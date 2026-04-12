@@ -559,8 +559,21 @@ code {
   line-height: 1.45;
 }
 
+.instructions-page__tabs {
+  margin-bottom: 1.25rem;
+}
+
 .instruction-view__toolbar {
   margin-bottom: 1rem;
+}
+
+.exclusions-table__url {
+  max-width: 22rem;
+  word-break: break-word;
+}
+
+.exclusions-table__why {
+  word-break: break-word;
 }
 
 .instruction-empty {

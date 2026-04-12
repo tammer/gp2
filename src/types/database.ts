@@ -34,3 +34,10 @@ export type UserInstructions = {
   user_id: string
   instruction: string
 }
+
+export type NewsArticleExclusion = {
+  category_id: string
+  url: string
+  excluded_at: string
+  why: string | null
+}
