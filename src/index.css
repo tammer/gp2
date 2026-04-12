@@ -428,7 +428,7 @@ code {
 }
 
 .article__meta {
-  margin: 0 0 0.35rem;
+  margin: 0 0 0.75rem;
   font-size: 0.9rem;
   color: var(--muted);
 }
@@ -442,7 +442,17 @@ code {
   font-size: 1.5rem;
 }
 
-.article__short-summary--empty {
+.article__short-summary-link {
+  color: inherit;
+  text-decoration: none;
+}
+
+.article__short-summary-link:hover {
+  color: var(--accent);
+  text-decoration: underline;
+}
+
+.article__short-summary-link--empty {
   color: var(--muted);
 }
 

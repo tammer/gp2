@@ -45,15 +45,21 @@ export function ArticleCard({
           </span>
         </p>
       ) : null}
+      <p className="article__meta">{formatDate(article.article_date)}</p>
       <div className="article__section">
-        <p
-          className={
-            article.short_summary
-              ? 'article__short-summary'
-              : 'article__short-summary article__short-summary--empty'
-          }
-        >
-          {article.short_summary ? article.short_summary : 'No short summary.'}{' '}
+        <p className="article__short-summary">
+          <a
+            href={article.url}
+            target="_blank"
+            rel="noopener noreferrer"
+            className={
+              article.short_summary
+                ? 'article__short-summary-link'
+                : 'article__short-summary-link article__short-summary-link--empty'
+            }
+          >
+            {article.short_summary ? article.short_summary : 'No short summary.'}
+          </a>{' '}
           {showMarkRead ? (
             <button
               type="button"
@@ -66,7 +72,6 @@ export function ArticleCard({
           ) : null}
         </p>
       </div>
-      <p className="article__meta">{formatDate(article.article_date)}</p>
       <h2 className="article__headline">
         <a href={article.url} target="_blank" rel="noopener noreferrer">
           {article.headline}
