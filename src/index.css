@@ -433,10 +433,8 @@ code {
 
 .article__meta {
   margin: 0;
-  margin-left: auto;
   font-size: 0.9rem;
   color: var(--muted);
-  text-align: right;
 }
 
 .article__section {
