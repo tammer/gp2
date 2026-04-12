@@ -220,6 +220,9 @@ code {
 .btn--inline-mark-read {
   margin-left: 0.35rem;
   vertical-align: baseline;
+  font-size: 0.55em;
+  padding: 0.3375rem 0.675rem;
+  gap: 0.2625rem;
 }
 
 .input,
@@ -448,6 +451,11 @@ code {
   flex-wrap: wrap;
   gap: 0.5rem;
   margin-top: 0.5rem;
+}
+
+.article__actions > .btn--primary,
+.article__actions > .btn--secondary {
+  margin-left: auto;
 }
 
 .card {
