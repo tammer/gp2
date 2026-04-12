@@ -409,9 +409,9 @@ code {
 }
 
 .article__headline {
-  margin: 0 0 0.35rem;
-  font-size: 1.2rem;
-  font-weight: 650;
+  margin: 0 0 0.75rem;
+  font-size: 1rem;
+  font-weight: 400;
 }
 
 .article__headline a {
@@ -425,13 +425,18 @@ code {
 }
 
 .article__meta {
-  margin: 0 0 0.75rem;
+  margin: 0 0 0.35rem;
   font-size: 0.9rem;
   color: var(--muted);
 }
 
 .article__section {
   margin-bottom: 0.75rem;
+}
+
+.article__short-summary {
+  margin: 0;
+  font-size: 1.5rem;
 }
 
 .article__short-summary--empty {

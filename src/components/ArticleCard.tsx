@@ -45,12 +45,6 @@ export function ArticleCard({
           </span>
         </p>
       ) : null}
-      <h2 className="article__headline">
-        <a href={article.url} target="_blank" rel="noopener noreferrer">
-          {article.headline}
-        </a>
-      </h2>
-      <p className="article__meta">{formatDate(article.article_date)}</p>
       <div className="article__section">
         <p
           className={
@@ -72,6 +66,12 @@ export function ArticleCard({
           ) : null}
         </p>
       </div>
+      <p className="article__meta">{formatDate(article.article_date)}</p>
+      <h2 className="article__headline">
+        <a href={article.url} target="_blank" rel="noopener noreferrer">
+          {article.headline}
+        </a>
+      </h2>
       <div className="article__section">
         {article.full_summary ? (
           <p className="article__full-summary-body" style={{ margin: 0, whiteSpace: 'pre-wrap' }}>
