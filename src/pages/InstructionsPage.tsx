@@ -102,10 +102,9 @@ export function InstructionsPage() {
 
   return (
     <div className="page page--narrow">
-      <h1 className="page-title">Global instructions</h1>
+      <h1 className="page-title">Filtering Instructions</h1>
       <p className="page-lead muted">
-        Text you save here is for your ingestion pipeline (not used by this app). It is stored in{' '}
-        <code>user_instructions</code>. Use markdown for structure.
+        Tell the AI what content to filter out.
       </p>
       {loading ? (
         <p className="muted">Loading…</p>
