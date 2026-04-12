@@ -18,13 +18,6 @@ export function AppLayout() {
         {user ? (
           <nav className="app-nav" aria-label="Main">
             <NavLink
-              to="/"
-              end
-              className={({ isActive }) => `app-nav__link${isActive ? ' active' : ''}`}
-            >
-              Home
-            </NavLink>
-            <NavLink
               to="/instructions"
               className={({ isActive }) => `app-nav__link${isActive ? ' active' : ''}`}
             >
