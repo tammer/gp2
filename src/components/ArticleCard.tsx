@@ -38,14 +38,14 @@ export function ArticleCard({
 
   return (
     <article className="article">
-      {article.source.trim() ? (
-        <p className="article__source-wrap">
+      <div className="article__source-row">
+        {article.source.trim() ? (
           <span className="article__source-chip" style={getSourceChipColors(article.source)}>
             {article.source}
           </span>
-        </p>
-      ) : null}
-      <p className="article__meta">{formatDate(article.article_date)}</p>
+        ) : null}
+        <p className="article__meta">{formatDate(article.article_date)}</p>
+      </div>
       <div className="article__section">
         <p className="article__short-summary">
           <a

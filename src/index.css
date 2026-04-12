@@ -399,8 +399,12 @@ code {
   background: var(--surface);
 }
 
-.article__source-wrap {
-  margin: 0 0 0.5rem;
+.article__source-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem 1rem;
+  margin: 0 0 0.75rem;
 }
 
 .article__source-chip {
@@ -428,9 +432,11 @@ code {
 }
 
 .article__meta {
-  margin: 0 0 0.75rem;
+  margin: 0;
+  margin-left: auto;
   font-size: 0.9rem;
   color: var(--muted);
+  text-align: right;
 }
 
 .article__section {
