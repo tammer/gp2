@@ -186,10 +186,9 @@ export function HomePage() {
               </option>
             ))}
           </select>
-        </div>
-
-        <div className="view-toggle" role="group" aria-label="Article list view">
-          {viewButtons}
+          <div className="view-toggle" role="group" aria-label="Article list view">
+            {viewButtons}
+          </div>
         </div>
       </section>
 
