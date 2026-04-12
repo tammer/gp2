@@ -272,7 +272,7 @@ export function SourcesPage() {
             ) : null}
           </div>
           <label className="field field--full">
-            <span className="field__label">Per-source instruction</span>
+            <span className="field__label">Optional Per-source instruction (Override the global instructions)</span>
             <textarea
               className="textarea"
               rows={3}

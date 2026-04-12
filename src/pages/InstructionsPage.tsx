@@ -178,7 +178,7 @@ export function InstructionsPage() {
         {tabButtons}
       </div>
       {tab === 'instructions' ? (
-        <p className="page-lead muted">Tell the AI what content to filter out.</p>
+        <p className="page-lead muted">Tell the AI what content to filter out; tell it what you DON't want to see. e.g. "I don't wants to see news about Trump". If you want do the opposite, then say something like "Filter out evertying except stories about cats"You can use markdown to structure your instructions.</p>
       ) : (
         <p className="page-lead muted">
           The 25 most recent article exclusions across your categories (newest first).
