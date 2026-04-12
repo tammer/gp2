@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState, type FormEvent } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Navigate } from 'react-router-dom'
 import { ArticleCard } from '@/components/ArticleCard'
 import { useAuth } from '@/lib/use-auth'
@@ -13,13 +13,11 @@ export function HomePage() {
   const [categoryId, setCategoryId] = useState<string>('')
   const [listView, setListView] = useState<ListView>('unread')
   const [articles, setArticles] = useState<NewsArticle[]>([])
-  const [newCategoryName, setNewCategoryName] = useState('')
 
   const [catLoading, setCatLoading] = useState(true)
   const [catError, setCatError] = useState<string | null>(null)
   const [artLoading, setArtLoading] = useState(false)
   const [artError, setArtError] = useState<string | null>(null)
-  const [addCatBusy, setAddCatBusy] = useState(false)
   const [busyReadId, setBusyReadId] = useState<string | null>(null)
   const [busySavedId, setBusySavedId] = useState<string | null>(null)
 
@@ -93,28 +91,6 @@ export function HomePage() {
     }
     void loadArticles()
   }, [uid, categoryId, listView, loadArticles])
-
-  async function addCategory(e: FormEvent) {
-    e.preventDefault()
-    const name = newCategoryName.trim()
-    if (!supabase || !uid || !name) return
-    setAddCatBusy(true)
-    setCatError(null)
-    const { data, error } = await supabase
-      .from('categories')
-      .insert({ user_id: uid, name })
-      .select('id,user_id,name')
-      .single()
-    setAddCatBusy(false)
-    if (error) {
-      setCatError(error.message)
-      return
-    }
-    setNewCategoryName('')
-    const row = data as Category
-    setCategories((prev) => [...prev, row].sort((a, b) => a.name.localeCompare(b.name)))
-    setCategoryId(row.id)
-  }
 
   async function patchArticle(id: string, patch: Partial<Pick<NewsArticle, 'read' | 'saved'>>) {
     if (!supabase || !uid) return
@@ -215,21 +191,6 @@ export function HomePage() {
               ))}
             </select>
           </label>
-          <form className="add-category" onSubmit={addCategory}>
-            <label className="field field--inline">
-              <span className="sr-only">New category name</span>
-              <input
-                className="input"
-                placeholder="New category"
-                value={newCategoryName}
-                onChange={(e) => setNewCategoryName(e.target.value)}
-                disabled={addCatBusy}
-              />
-            </label>
-            <button type="submit" className="btn btn--secondary" disabled={addCatBusy || !newCategoryName.trim()}>
-              Add category
-            </button>
-          </form>
         </div>
 
         <div className="view-toggle" role="group" aria-label="Article list view">
@@ -248,8 +209,8 @@ export function HomePage() {
       ) : categories.length === 0 ? (
         <div className="empty-state">
           <p>
-            <strong>No categories yet.</strong> Add a category above, or wait until your ingestion pipeline creates
-            them. Articles are grouped by category.
+            <strong>No categories yet.</strong> Add categories on the Sources page, or wait until your ingestion
+            pipeline creates them. Articles are grouped by category.
           </p>
         </div>
       ) : artLoading ? (

@@ -23,9 +23,12 @@ export function SourcesPage() {
   const [url, setUrl] = useState('')
   const [useRss, setUseRss] = useState(false)
   const [categoryId, setCategoryId] = useState('')
+  const [newCategoryName, setNewCategoryName] = useState('')
   const [instruction, setInstruction] = useState('')
   const [formError, setFormError] = useState<string | null>(null)
+  const [categoryError, setCategoryError] = useState<string | null>(null)
   const [adding, setAdding] = useState(false)
+  const [addCatBusy, setAddCatBusy] = useState(false)
 
   const [editingId, setEditingId] = useState<string | null>(null)
   const [editUrl, setEditUrl] = useState('')
@@ -71,6 +74,27 @@ export function SourcesPage() {
     void loadCategories()
     void load()
   }, [uid, load, loadCategories])
+
+  async function addCategory() {
+    const name = newCategoryName.trim()
+    if (!supabase || !uid || !name) return
+    setAddCatBusy(true)
+    setCategoryError(null)
+    const { data, error: err } = await supabase
+      .from('categories')
+      .insert({ user_id: uid, name })
+      .select('id,user_id,name')
+      .single()
+    setAddCatBusy(false)
+    if (err) {
+      setCategoryError(err.message)
+      return
+    }
+    setNewCategoryName('')
+    const row = data as Category
+    setCategories((prev) => [...prev, row].sort((a, b) => a.name.localeCompare(b.name)))
+    setCategoryId(row.id)
+  }
 
   async function onAdd(e: FormEvent) {
     e.preventDefault()
@@ -204,17 +228,49 @@ export function SourcesPage() {
             <input type="checkbox" checked={useRss} onChange={(e) => setUseRss(e.target.checked)} />
             <span>Use RSS</span>
           </label>
-          <label className="field">
+          <div className="field field--full">
             <span className="field__label">Category</span>
-            <select className="input" value={categoryId} onChange={(e) => setCategoryId(e.target.value)}>
-              <option value="">None</option>
-              {categories.map((c) => (
-                <option key={c.id} value={c.id}>
-                  {c.name}
-                </option>
-              ))}
-            </select>
-          </label>
+            <div className="category-with-add__row">
+              <select className="input category-with-add__select" value={categoryId} onChange={(e) => setCategoryId(e.target.value)}>
+                <option value="">None</option>
+                {categories.map((c) => (
+                  <option key={c.id} value={c.id}>
+                    {c.name}
+                  </option>
+                ))}
+              </select>
+              <div className="add-category add-category--sources">
+                <label className="field field--inline add-category__name">
+                  <span className="sr-only">New category name</span>
+                  <input
+                    className="input"
+                    placeholder="New category"
+                    value={newCategoryName}
+                    onChange={(e) => setNewCategoryName(e.target.value)}
+                    disabled={addCatBusy}
+                    onKeyDown={(e) => {
+                      if (e.key !== 'Enter') return
+                      e.preventDefault()
+                      void addCategory()
+                    }}
+                  />
+                </label>
+                <button
+                  type="button"
+                  className="btn btn--secondary"
+                  disabled={addCatBusy || !newCategoryName.trim()}
+                  onClick={() => void addCategory()}
+                >
+                  Add category
+                </button>
+              </div>
+            </div>
+            {categoryError ? (
+              <p className="form-error" role="alert">
+                {categoryError}
+              </p>
+            ) : null}
+          </div>
           <label className="field field--full">
             <span className="field__label">Per-source instruction</span>
             <textarea
