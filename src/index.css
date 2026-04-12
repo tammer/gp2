@@ -39,9 +39,38 @@
   box-sizing: border-box;
 }
 
+html {
+  height: 100%;
+}
+
 body {
   margin: 0;
-  min-height: 100vh;
+  height: 100%;
+}
+
+/* Fixed viewport column: without a definite height, flex children grow with content and never scroll inside. */
+#root {
+  height: 100dvh;
+  max-height: 100dvh;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Auth and other routes that render a top-level .page (no AppLayout shell). */
+#root > .page {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  width: 100%;
+}
+
+.app {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
 }
 
 a {
@@ -132,9 +161,27 @@ code {
 }
 
 .app-main {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  width: 100%;
   max-width: 52rem;
   margin: 0 auto;
   padding: 1.5rem 1.25rem 3rem;
+}
+
+.app-main > .page {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+}
+
+.app-main > .page.page--instructions {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
 }
 
 .page-title {
@@ -557,14 +604,69 @@ code {
   font-family: ui-monospace, 'Cascadia Code', 'Source Code Pro', Menlo, monospace;
   font-size: 0.9rem;
   line-height: 1.45;
+  min-height: 10rem;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  resize: none;
+}
+
+.instructions-page__scroll {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.instructions-page__form {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.instructions-page__form > .form-error,
+.instructions-page__form > .form-actions {
+  flex-shrink: 0;
+}
+
+.instruction-field-grow {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.instruction-field-grow .textarea--instruction {
+  flex: 1 1 0;
+  min-height: 10rem;
+  max-height: none;
 }
 
 .instructions-page__tabs {
   margin-bottom: 1.25rem;
 }
 
+.instruction-view {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
 .instruction-view__toolbar {
-  margin-bottom: 1rem;
+  display: flex;
+  flex-shrink: 0;
+  justify-content: flex-end;
+  margin-top: 0.75rem;
+}
+
+.instruction-view > .form-error,
+.instruction-view > .form-success {
+  flex-shrink: 0;
 }
 
 .exclusions-table__url {
@@ -577,6 +679,9 @@ code {
 }
 
 .instruction-empty {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
   padding: 1.25rem;
   border: 1px dashed var(--border);
   border-radius: var(--radius);
@@ -587,12 +692,22 @@ code {
 }
 
 .instruction-markdown {
+  flex: 1 1 auto;
+  min-height: 0;
   padding: 1.25rem 1.35rem;
   border: 1px solid var(--border);
   border-radius: var(--radius);
   background: var(--surface);
   font-size: 1rem;
   line-height: 1.6;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+/* Hard cap: flex alone failed when #root grew with content; svh tracks visible viewport. */
+.page.page--instructions .instruction-markdown,
+.page.page--instructions .instruction-field-grow .textarea--instruction {
+  max-height: min(calc(100svh - 22rem), calc(100dvh - 22rem));
 }
 
 .instruction-markdown :first-child {

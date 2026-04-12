@@ -172,7 +172,7 @@ export function InstructionsPage() {
   }
 
   return (
-    <div className={`page${tab === 'instructions' ? ' page--narrow' : ''}`}>
+    <div className={`page${tab === 'instructions' ? ' page--instructions' : ''}`}>
       <h1 className="page-title">Filtering</h1>
       <div className="view-toggle instructions-page__tabs" role="group" aria-label="Instructions sections">
         {tabButtons}
@@ -186,47 +186,42 @@ export function InstructionsPage() {
       )}
 
       {tab === 'instructions' ? (
-        loading ? (
-          <p className="muted">Loading…</p>
-        ) : editing ? (
-          <form className="form-stack" onSubmit={onSave}>
-            <label className="field">
-              <span className="field__label">Markdown</span>
-              <textarea
-                className="textarea textarea--instruction"
-                rows={16}
-                value={draft}
-                onChange={(e) => setDraft(e.target.value)}
-                placeholder={`## Tone
+        <div className="instructions-page__scroll">
+          {loading ? (
+            <p className="muted">Loading…</p>
+          ) : editing ? (
+            <form className="form-stack instructions-page__form" onSubmit={onSave}>
+              <label className="field instruction-field-grow">
+                <span className="field__label">Markdown</span>
+                <textarea
+                  className="textarea textarea--instruction"
+                  rows={16}
+                  value={draft}
+                  onChange={(e) => setDraft(e.target.value)}
+                  placeholder={`## Tone
 Summarize in a neutral voice…
 
 - Bullet points welcome
 - Use **bold** for emphasis`}
-                spellCheck
-              />
-            </label>
-            {error ? (
-              <p className="form-error" role="alert">
-                {error}
-              </p>
-            ) : null}
-            <div className="form-actions">
-              <button type="submit" className="btn btn--primary" disabled={saving}>
-                {saving ? 'Saving…' : 'Save'}
-              </button>
-              <button type="button" className="btn btn--ghost" disabled={saving} onClick={cancelEdit}>
-                Cancel
-              </button>
-            </div>
-          </form>
-        ) : (
-          <>
-            <div className="instruction-view">
-              <div className="instruction-view__toolbar">
-                <button type="button" className="btn btn--primary" onClick={startEdit}>
-                  {instruction.trim() ? 'Edit' : 'Add instructions'}
+                  spellCheck
+                />
+              </label>
+              {error ? (
+                <p className="form-error" role="alert">
+                  {error}
+                </p>
+              ) : null}
+              <div className="form-actions">
+                <button type="submit" className="btn btn--primary" disabled={saving}>
+                  {saving ? 'Saving…' : 'Save'}
+                </button>
+                <button type="button" className="btn btn--ghost" disabled={saving} onClick={cancelEdit}>
+                  Cancel
                 </button>
               </div>
+            </form>
+          ) : (
+            <div className="instruction-view">
               {error ? (
                 <p className="form-error" role="alert">
                   {error}
@@ -256,13 +251,18 @@ Summarize in a neutral voice…
               ) : (
                 <div className="instruction-empty muted">
                   <p>
-                    No instructions yet. Click <strong>Add instructions</strong> to write markdown for your pipeline.
+                    No instructions yet. Click <strong>Add instructions</strong> below to write markdown for your pipeline.
                   </p>
                 </div>
               )}
+              <div className="instruction-view__toolbar">
+                <button type="button" className="btn btn--primary" onClick={startEdit}>
+                  {instruction.trim() ? 'Edit' : 'Add instructions'}
+                </button>
+              </div>
             </div>
-          </>
-        )
+          )}
+        </div>
       ) : exclusionsLoading ? (
         <p className="muted">Loading exclusions…</p>
       ) : exclusionsError ? (
