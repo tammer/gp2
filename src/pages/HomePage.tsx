@@ -149,7 +149,6 @@ export function HomePage() {
   if (!supabaseConfigured) {
     return (
       <div className="page">
-        <h1 className="page-title">Reader</h1>
         <p className="muted">Configure Supabase to load articles.</p>
       </div>
     )
@@ -171,26 +170,22 @@ export function HomePage() {
 
   return (
     <div className="page">
-      <h1 className="page-title">Reader</h1>
-
       <section className="reader-controls" aria-label="Filters">
         <div className="reader-controls__row">
-          <label className="field field--inline">
-            <span className="field__label">Category</span>
-            <select
-              className="select"
-              value={categoryId}
-              onChange={(e) => setCategoryId(e.target.value)}
-              disabled={catLoading || categories.length === 0}
-            >
-              {categories.length === 0 ? <option value="">—</option> : null}
-              {categories.map((c) => (
-                <option key={c.id} value={c.id}>
-                  {c.name}
-                </option>
-              ))}
-            </select>
-          </label>
+          <select
+            className="select reader-controls__category-select"
+            aria-label="Category"
+            value={categoryId}
+            onChange={(e) => setCategoryId(e.target.value)}
+            disabled={catLoading || categories.length === 0}
+          >
+            {categories.length === 0 ? <option value="">—</option> : null}
+            {categories.map((c) => (
+              <option key={c.id} value={c.id}>
+                {c.name}
+              </option>
+            ))}
+          </select>
         </div>
 
         <div className="view-toggle" role="group" aria-label="Article list view">

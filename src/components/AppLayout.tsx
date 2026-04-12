@@ -13,7 +13,7 @@ export function AppLayout() {
           <NavLink to="/" className="app-header__title-link" end>
             <span className="app-header__title">Gistprism</span>
           </NavLink>
-          <span className="app-header__tagline">Personalized reading</span>
+          
         </div>
         {user ? (
           <nav className="app-nav" aria-label="Main">
