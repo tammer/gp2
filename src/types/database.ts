@@ -2,6 +2,7 @@ export type Category = {
   id: string
   user_id: string
   name: string
+  instruction: string
 }
 
 export type NewsArticle = {
@@ -26,13 +27,6 @@ export type Source = {
   url: string
   use_rss: boolean
   category_id: string | null
-  instruction: string
-}
-
-export type UserInstructions = {
-  id: string
-  user_id: string
-  instruction: string
 }
 
 export type NewsArticleExclusion = {

@@ -17,14 +17,8 @@ export function AppLayout() {
         </div>
         {user ? (
           <nav className="app-nav" aria-label="Main">
-            <NavLink
-              to="/instructions"
-              className={({ isActive }) => `app-nav__link${isActive ? ' active' : ''}`}
-            >
-              Instructions
-            </NavLink>
-            <NavLink to="/sources" className={({ isActive }) => `app-nav__link${isActive ? ' active' : ''}`}>
-              Sources
+            <NavLink to="/settings" className={({ isActive }) => `app-nav__link${isActive ? ' active' : ''}`}>
+              Settings
             </NavLink>
             <button type="button" className="btn btn--ghost app-nav__signout" onClick={() => void signOut()}>
               Sign out

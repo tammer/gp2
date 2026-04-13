@@ -29,7 +29,7 @@ export function HomePage() {
     setCatError(null)
     const { data, error } = await supabase
       .from('categories')
-      .select('id,user_id,name')
+      .select('id,user_id,name,instruction')
       .eq('user_id', uid)
       .order('name', { ascending: true })
     setCatLoading(false)
@@ -203,8 +203,8 @@ export function HomePage() {
       ) : categories.length === 0 ? (
         <div className="empty-state">
           <p>
-            <strong>No categories yet.</strong> Add categories on the Sources page, or wait until your ingestion
-            pipeline creates them. Articles are grouped by category.
+            <strong>No categories yet.</strong> Add categories in Settings, or wait until your ingestion pipeline
+            creates them. Articles are grouped by category.
           </p>
         </div>
       ) : artLoading ? (

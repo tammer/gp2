@@ -28,15 +28,15 @@ Web app for personalized news articles backed by **Supabase** (Postgres + Auth +
    npm run dev
    ```
 
-6. **First use** — sign up or sign in, add at least one **category** on the home page (or rely on your ingestor to create categories), then articles ingested for your `user_id` will appear when present.
+6. **First use** — sign up or sign in, add at least one **category** in **Settings** (or rely on your ingestor to create categories), then articles ingested for your `user_id` will appear when present.
 
 ## Routes
 
 | Path | Page |
 |------|------|
 | `/` | Reader (categories, Unread / Read / Saved) |
-| `/instructions` | Global `user_instructions` text |
-| `/sources` | CRUD for `sources` |
+| `/settings` | Categories (instructions per category), sources, exclusions |
+| `/instructions`, `/sources` | Redirect to `/settings` |
 | `/auth` | Sign in / sign up |
 
 Unauthenticated users are redirected to `/auth` for app pages that need a session.
