@@ -176,9 +176,6 @@ function CategoryDetailPane({
 
       <div className="settings-category__section">
         <h3 className="settings-category__subheading">Instructions</h3>
-        <p className="muted settings-category__hint">
-          Markdown rules for this category (filtering, tone, what to exclude). Applies to all sources in this category.
-        </p>
         {instrEditing ? (
           <form className="form-stack" onSubmit={saveInstruction}>
             <label className="field instruction-field-grow">

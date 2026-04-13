@@ -959,7 +959,6 @@ code {
   margin: 0;
   font-size: 1.35rem;
   font-weight: 650;
-  flex: 1 1 auto;
 }
 
 .settings-category__rename-form {
