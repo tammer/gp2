@@ -929,6 +929,10 @@ code {
   margin-bottom: 1.25rem;
 }
 
+.settings-add-source-action {
+  margin-top: 1rem;
+}
+
 /* Closed <dialog> must stay hidden: never set display on .modal-dialog alone — it overrides the UA `display: none`. */
 .modal-dialog {
   border: none;
@@ -997,4 +1001,42 @@ code {
   justify-content: flex-end;
   gap: 0.5rem;
   margin-top: 0.25rem;
+}
+
+.modal-dialog__footer--spread {
+  justify-content: space-between;
+  align-items: center;
+}
+
+.modal-dialog__footer-right {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.modal-dialog__inline-link {
+  white-space: nowrap;
+}
+
+.add-source-modal__meta {
+  margin: 0 0 0.5rem;
+  padding: 0.75rem 1rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--bg);
+}
+
+.add-source-modal__meta-line {
+  margin: 0.25rem 0;
+  font-size: 0.9rem;
+}
+
+.add-source-modal__meta-line:first-child {
+  margin-top: 0;
+}
+
+.add-source-modal__notes {
+  margin: 0.5rem 0 0;
+  font-size: 0.88rem;
+  line-height: 1.45;
 }

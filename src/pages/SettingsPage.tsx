@@ -3,18 +3,10 @@ import { Navigate } from 'react-router-dom'
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
 import rehypeSanitize from 'rehype-sanitize'
+import { AddSourceModal } from '@/components/AddSourceModal'
 import { useAuth } from '@/lib/use-auth'
 import { supabase, supabaseConfigured } from '@/lib/supabase'
 import type { Category, NewsArticleExclusion, Source } from '@/types/database'
-
-function isProbablyUrl(s: string): boolean {
-  try {
-    const u = new URL(s)
-    return u.protocol === 'http:' || u.protocol === 'https:'
-  } catch {
-    return false
-  }
-}
 
 type ExclusionRow = Pick<NewsArticleExclusion, 'category_id' | 'url' | 'why' | 'excluded_at'>
 
@@ -23,11 +15,13 @@ function CategoryBlock({
   sources,
   uid,
   onReload,
+  getAccessToken,
 }: {
   category: Category
   sources: Source[]
   uid: string
   onReload: () => void
+  getAccessToken: () => Promise<string | null>
 }) {
   const [renaming, setRenaming] = useState(false)
   const [nameDraft, setNameDraft] = useState(category.name)
@@ -40,10 +34,8 @@ function CategoryBlock({
   const [instrError, setInstrError] = useState<string | null>(null)
   const [instrSuccess, setInstrSuccess] = useState<string | null>(null)
 
-  const [url, setUrl] = useState('')
-  const [useRss, setUseRss] = useState(false)
-  const [addBusy, setAddBusy] = useState(false)
-  const [addError, setAddError] = useState<string | null>(null)
+  const [addSourceOpen, setAddSourceOpen] = useState(false)
+  const [sourceActionError, setSourceActionError] = useState<string | null>(null)
 
   const [exclStatus, setExclStatus] = useState<'idle' | 'loading' | 'done' | 'error'>('idle')
   const [exclRows, setExclRows] = useState<ExclusionRow[]>([])
@@ -108,42 +100,13 @@ function CategoryBlock({
     onReload()
   }
 
-  async function onAddSource(e: FormEvent) {
-    e.preventDefault()
-    setAddError(null)
-    const u = url.trim()
-    if (!u) {
-      setAddError('URL is required.')
-      return
-    }
-    if (!isProbablyUrl(u)) {
-      setAddError('Enter a valid http(s) URL.')
-      return
-    }
-    if (!supabase) return
-    setAddBusy(true)
-    const { error: err } = await supabase.from('sources').insert({
-      user_id: uid,
-      url: u,
-      use_rss: useRss,
-      category_id: category.id,
-    })
-    setAddBusy(false)
-    if (err) {
-      setAddError(err.message)
-      return
-    }
-    setUrl('')
-    setUseRss(false)
-    onReload()
-  }
-
   async function removeSource(id: string) {
     if (!supabase) return
     if (!confirm('Delete this source?')) return
+    setSourceActionError(null)
     const { error: err } = await supabase.from('sources').delete().eq('id', id).eq('user_id', uid)
     if (err) {
-      setAddError(err.message)
+      setSourceActionError(err.message)
       return
     }
     onReload()
@@ -293,26 +256,6 @@ function CategoryBlock({
 
       <div className="settings-category__section">
         <h3 className="settings-category__subheading">Sources</h3>
-        <form className="form-grid settings-category__add-source" onSubmit={onAddSource}>
-          <label className="field field--full">
-            <span className="field__label">Add source URL</span>
-            <input className="input" type="url" value={url} onChange={(e) => setUrl(e.target.value)} />
-          </label>
-          <label className="field field--checkbox">
-            <input type="checkbox" checked={useRss} onChange={(e) => setUseRss(e.target.checked)} />
-            <span>Use RSS</span>
-          </label>
-          {addError ? (
-            <p className="form-error field--full" role="alert">
-              {addError}
-            </p>
-          ) : null}
-          <div className="field--full">
-            <button type="submit" className="btn btn--primary" disabled={addBusy}>
-              {addBusy ? 'Adding…' : 'Add source'}
-            </button>
-          </div>
-        </form>
         {sources.length === 0 ? (
           <p className="muted">No sources in this category yet.</p>
         ) : (
@@ -346,6 +289,25 @@ function CategoryBlock({
             </table>
           </div>
         )}
+        {sourceActionError ? (
+          <p className="form-error" role="alert">
+            {sourceActionError}
+          </p>
+        ) : null}
+        <div className="settings-add-source-action">
+          <button type="button" className="btn btn--primary" onClick={() => setAddSourceOpen(true)}>
+            Add source
+          </button>
+        </div>
+        <AddSourceModal
+          open={addSourceOpen}
+          onClose={() => setAddSourceOpen(false)}
+          categoryId={category.id}
+          categoryLabel={category.name}
+          userId={uid}
+          getAccessToken={getAccessToken}
+          onSuccess={onReload}
+        />
       </div>
 
       <details className="settings-exclusions" onToggle={onExclusionsToggle}>
@@ -393,52 +355,23 @@ function UncategorizedBlock({
   sources,
   uid,
   onReload,
+  getAccessToken,
 }: {
   sources: Source[]
   uid: string
   onReload: () => void
+  getAccessToken: () => Promise<string | null>
 }) {
-  const [url, setUrl] = useState('')
-  const [useRss, setUseRss] = useState(false)
-  const [addBusy, setAddBusy] = useState(false)
-  const [addError, setAddError] = useState<string | null>(null)
-
-  async function onAddSource(e: FormEvent) {
-    e.preventDefault()
-    setAddError(null)
-    const u = url.trim()
-    if (!u) {
-      setAddError('URL is required.')
-      return
-    }
-    if (!isProbablyUrl(u)) {
-      setAddError('Enter a valid http(s) URL.')
-      return
-    }
-    if (!supabase) return
-    setAddBusy(true)
-    const { error: err } = await supabase.from('sources').insert({
-      user_id: uid,
-      url: u,
-      use_rss: useRss,
-      category_id: null,
-    })
-    setAddBusy(false)
-    if (err) {
-      setAddError(err.message)
-      return
-    }
-    setUrl('')
-    setUseRss(false)
-    onReload()
-  }
+  const [addSourceOpen, setAddSourceOpen] = useState(false)
+  const [sourceActionError, setSourceActionError] = useState<string | null>(null)
 
   async function removeSource(id: string) {
     if (!supabase) return
     if (!confirm('Delete this source?')) return
+    setSourceActionError(null)
     const { error: err } = await supabase.from('sources').delete().eq('id', id).eq('user_id', uid)
     if (err) {
-      setAddError(err.message)
+      setSourceActionError(err.message)
       return
     }
     onReload()
@@ -454,26 +387,6 @@ function UncategorizedBlock({
       <p className="muted settings-category__hint">
         Sources without a category. Add new uncategorized feeds here, or add under a category above.
       </p>
-      <form className="form-grid settings-category__add-source" onSubmit={onAddSource}>
-        <label className="field field--full">
-          <span className="field__label">Add source URL (no category)</span>
-          <input className="input" type="url" value={url} onChange={(e) => setUrl(e.target.value)} />
-        </label>
-        <label className="field field--checkbox">
-          <input type="checkbox" checked={useRss} onChange={(e) => setUseRss(e.target.checked)} />
-          <span>Use RSS</span>
-        </label>
-        {addError ? (
-          <p className="form-error field--full" role="alert">
-            {addError}
-          </p>
-        ) : null}
-        <div className="field--full">
-          <button type="submit" className="btn btn--primary" disabled={addBusy}>
-            {addBusy ? 'Adding…' : 'Add source'}
-          </button>
-        </div>
-      </form>
       {sources.length === 0 ? (
         <p className="muted">No uncategorized sources.</p>
       ) : (
@@ -507,6 +420,25 @@ function UncategorizedBlock({
           </table>
         </div>
       )}
+      {sourceActionError ? (
+        <p className="form-error" role="alert">
+          {sourceActionError}
+        </p>
+      ) : null}
+      <div className="settings-add-source-action">
+        <button type="button" className="btn btn--primary" onClick={() => setAddSourceOpen(true)}>
+          Add source
+        </button>
+      </div>
+      <AddSourceModal
+        open={addSourceOpen}
+        onClose={() => setAddSourceOpen(false)}
+        categoryId={null}
+        categoryLabel="Uncategorized"
+        userId={uid}
+        getAccessToken={getAccessToken}
+        onSuccess={onReload}
+      />
     </section>
   )
 }
@@ -525,6 +457,12 @@ export function SettingsPage() {
   const addCategoryDialogRef = useRef<HTMLDialogElement>(null)
 
   const uid = user?.id
+
+  const getAccessToken = useCallback(async () => {
+    if (!supabase) return null
+    const { data } = await supabase.auth.getSession()
+    return data.session?.access_token ?? null
+  }, [])
 
   function openAddCategoryModal() {
     setAddCatError(null)
@@ -744,13 +682,19 @@ export function SettingsPage() {
               sources={sourcesByCategory.map.get(c.id) ?? []}
               uid={user.id}
               onReload={() => void reload()}
+              getAccessToken={getAccessToken}
             />
           ))}
         </div>
       )}
 
       {!loading ? (
-        <UncategorizedBlock sources={sourcesByCategory.uncategorized} uid={user.id} onReload={() => void reload()} />
+        <UncategorizedBlock
+          sources={sourcesByCategory.uncategorized}
+          uid={user.id}
+          onReload={() => void reload()}
+          getAccessToken={getAccessToken}
+        />
       ) : null}
     </div>
   )
