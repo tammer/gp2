@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState, type FormEvent } from 'react'
 import { Navigate } from 'react-router-dom'
 import { ArticleCard } from '@/components/ArticleCard'
 import { useAuth } from '@/lib/use-auth'
@@ -20,6 +20,11 @@ export function HomePage() {
   const [artError, setArtError] = useState<string | null>(null)
   const [busyReadId, setBusyReadId] = useState<string | null>(null)
   const [busySavedId, setBusySavedId] = useState<string | null>(null)
+  const editFilterDialogRef = useRef<HTMLDialogElement | null>(null)
+  const [filterCategoryId, setFilterCategoryId] = useState<string | null>(null)
+  const [filterDraft, setFilterDraft] = useState('')
+  const [filterBusy, setFilterBusy] = useState(false)
+  const [filterError, setFilterError] = useState<string | null>(null)
 
   const uid = user?.id
 
@@ -124,6 +129,52 @@ export function HomePage() {
     }
   }
 
+  const filterCategory = useMemo(
+    () => (filterCategoryId ? categories.find((c) => c.id === filterCategoryId) ?? null : null),
+    [categories, filterCategoryId],
+  )
+
+  function openEditFilterModal(articleCategoryId: string) {
+    const category = categories.find((c) => c.id === articleCategoryId)
+    if (!category) return
+    setFilterCategoryId(category.id)
+    setFilterDraft(category.instruction)
+    setFilterError(null)
+    const dialog = editFilterDialogRef.current
+    if (!dialog) return
+    if (!dialog.open) dialog.showModal()
+  }
+
+  function closeEditFilterModal() {
+    if (filterBusy) return
+    editFilterDialogRef.current?.close()
+  }
+
+  function onEditFilterDialogClose() {
+    setFilterCategoryId(null)
+    setFilterDraft('')
+    setFilterError(null)
+  }
+
+  async function handleSaveFilter(e: FormEvent<HTMLFormElement>) {
+    e.preventDefault()
+    if (!supabase || !uid || !filterCategory) return
+    setFilterBusy(true)
+    setFilterError(null)
+    const { error } = await supabase
+      .from('categories')
+      .update({ instruction: filterDraft })
+      .eq('id', filterCategory.id)
+      .eq('user_id', uid)
+    setFilterBusy(false)
+    if (error) {
+      setFilterError(error.message)
+      return
+    }
+    await loadCategories()
+    editFilterDialogRef.current?.close()
+  }
+
   const viewButtons = useMemo(
     () =>
       (
@@ -170,6 +221,65 @@ export function HomePage() {
 
   return (
     <div className="page">
+      <dialog
+        ref={editFilterDialogRef}
+        className="modal-dialog"
+        aria-labelledby="edit-filter-modal-title"
+        onClose={onEditFilterDialogClose}
+        onCancel={(e) => {
+          if (filterBusy) e.preventDefault()
+        }}
+        onClick={(e) => {
+          if (e.target === e.currentTarget) closeEditFilterModal()
+        }}
+      >
+        <div className="modal-dialog__panel">
+          <header className="modal-dialog__header">
+            <h2 id="edit-filter-modal-title" className="modal-dialog__title">
+              Edit Filter
+            </h2>
+            <button
+              type="button"
+              className="btn btn--ghost btn--small"
+              disabled={filterBusy}
+              onClick={closeEditFilterModal}
+              aria-label="Close"
+            >
+              Close
+            </button>
+          </header>
+          <form className="form-stack" onSubmit={handleSaveFilter}>
+            <p className="muted">
+              Category: <strong>{filterCategory?.name ?? 'Unknown'}</strong>
+            </p>
+            <label className="field">
+              <span className="field__label">Instructions (markdown)</span>
+              <textarea
+                className="textarea textarea--instruction"
+                rows={10}
+                value={filterDraft}
+                onChange={(e) => setFilterDraft(e.target.value)}
+                disabled={filterBusy}
+                spellCheck
+              />
+            </label>
+            {filterError ? (
+              <p className="form-error" role="alert">
+                {filterError}
+              </p>
+            ) : null}
+            <div className="modal-dialog__footer">
+              <button type="button" className="btn btn--ghost" disabled={filterBusy} onClick={closeEditFilterModal}>
+                Cancel
+              </button>
+              <button type="submit" className="btn btn--primary" disabled={filterBusy || !filterCategory}>
+                {filterBusy ? 'Saving…' : 'Save'}
+              </button>
+            </div>
+          </form>
+        </div>
+      </dialog>
+
       <section className="reader-controls" aria-label="Filters">
         <div className="reader-controls__row">
           <select
@@ -226,6 +336,7 @@ export function HomePage() {
                 view={listView}
                 onSetRead={handleSetRead}
                 onToggleSaved={handleToggleSaved}
+                onEditFilter={openEditFilterModal}
                 busyRead={busyReadId === a.id}
                 busySaved={busySavedId === a.id}
               />
