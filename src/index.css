@@ -667,7 +667,7 @@ code {
 .instruction-view__toolbar {
   display: flex;
   flex-shrink: 0;
-  justify-content: center;
+  justify-content: flex-end;
   margin-top: 0.75rem;
 }
 
@@ -1043,6 +1043,8 @@ code {
 }
 
 .settings-add-source-action {
+  display: flex;
+  justify-content: flex-end;
   margin-top: 1rem;
 }
 
