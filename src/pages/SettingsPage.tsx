@@ -516,9 +516,6 @@ export function SettingsPage() {
   return (
     <div className="page page--settings">
       <h1 className="page-title">Settings</h1>
-      <p className="page-lead muted">
-        Pick a category to edit instructions, sources, and exclusions.
-      </p>
 
       <dialog
         ref={addCategoryDialogRef}
