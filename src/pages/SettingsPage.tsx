@@ -138,6 +138,8 @@ function CategoryDetailPane({
     if (e.currentTarget.open) void loadExclusionsIfNeeded()
   }
 
+  const hasInstruction = Boolean(category.instruction.trim())
+
   return (
     <section className="card settings-detail settings-category" aria-labelledby={`cat-heading-${category.id}`}>
       <div className="settings-category__header">
@@ -175,7 +177,7 @@ function CategoryDetailPane({
       </div>
 
       <div className="settings-category__section">
-        <h3 className="settings-category__subheading">Instructions</h3>
+        {instrEditing || hasInstruction ? <h3 className="settings-category__subheading">Instructions</h3> : null}
         {instrEditing ? (
           <form className="form-stack" onSubmit={saveInstruction}>
             <label className="field instruction-field-grow">
@@ -218,7 +220,7 @@ function CategoryDetailPane({
                 {instrSuccess}
               </p>
             ) : null}
-            {category.instruction.trim() ? (
+            {hasInstruction ? (
               <div className="instruction-markdown">
                 <ReactMarkdown
                   remarkPlugins={[remarkGfm]}
@@ -234,9 +236,7 @@ function CategoryDetailPane({
                   {category.instruction}
                 </ReactMarkdown>
               </div>
-            ) : (
-              <p className="muted">No instructions yet.</p>
-            )}
+            ) : null}
             <div className="instruction-view__toolbar">
               <button
                 type="button"
@@ -246,7 +246,7 @@ function CategoryDetailPane({
                   setInstrEditing(true)
                 }}
               >
-                {category.instruction.trim() ? 'Edit' : 'Add instructions'}
+                {hasInstruction ? 'Edit' : 'Add instructions'}
               </button>
             </div>
           </div>
