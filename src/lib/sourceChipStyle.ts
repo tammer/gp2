@@ -32,32 +32,11 @@ function hslToRgb(h360: number, sPct: number, lPct: number): [number, number, nu
   return [Math.round(r * 255), Math.round(g * 255), Math.round(b * 255)]
 }
 
-function channelToLinear(c: number): number {
-  const x = c / 255
-  return x <= 0.03928 ? x / 12.92 : ((x + 0.055) / 1.055) ** 2.4
-}
-
-function relativeLuminance(rgb: [number, number, number]): number {
-  const r = channelToLinear(rgb[0])
-  const g = channelToLinear(rgb[1])
-  const b = channelToLinear(rgb[2])
-  return 0.2126 * r + 0.7152 * g + 0.0722 * b
-}
-
-function contrastRatio(lumText: number, lumBg: number): number {
-  const L1 = Math.max(lumText, lumBg)
-  const L2 = Math.min(lumText, lumBg)
-  return (L1 + 0.05) / (L2 + 0.05)
-}
-
-const LUM_WHITE = 1
-const LUM_BLACK = 0
-const NEAR_WHITE = '#f4f6f8'
-const NEAR_BLACK = '#0d1117'
+const CHIP_TEXT_COLOR = '#ffffff'
 
 /**
- * Background from hashed hue + bounded S/L; text is near-black or near-white
- * whichever yields higher WCAG-style contrast vs the background.
+ * Background from hashed hue + bounded S/L; label text is always white.
+ * Lightness is capped so chips stay dark enough for white text (roughly mid-20s–high-30s %).
  */
 export function getSourceChipColors(source: string): {
   backgroundColor: string
@@ -66,18 +45,11 @@ export function getSourceChipColors(source: string): {
   const seed = hashString(source.trim() || '\0')
   const hue = seed % 360
   const sat = 48 + ((seed >>> 8) % 30)
-  const light = 34 + ((seed >>> 16) % 24)
-
-  const rgb = hslToRgb(hue, sat, light)
-  const lumBg = relativeLuminance(rgb)
-
-  const ratioWhite = contrastRatio(LUM_WHITE, lumBg)
-  const ratioBlack = contrastRatio(lumBg, LUM_BLACK)
-  const color = ratioBlack >= ratioWhite ? NEAR_BLACK : NEAR_WHITE
-
-  const [r, g, b] = rgb
+  // HSL lightness % — keep below ~40% so backgrounds never read as “pastel” / too light.
+  const light = 24 + ((seed >>> 16) % 14)
+  const [r, g, b] = hslToRgb(hue, sat, light)
   return {
     backgroundColor: `rgb(${r}, ${g}, ${b})`,
-    color,
+    color: CHIP_TEXT_COLOR,
   }
 }
