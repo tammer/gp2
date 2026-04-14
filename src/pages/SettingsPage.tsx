@@ -10,8 +10,6 @@ import type { Category, NewsArticleExclusion, Source } from '@/types/database'
 
 type ExclusionRow = Pick<NewsArticleExclusion, 'category_id' | 'url' | 'why' | 'excluded_at'>
 
-type SettingsSelection = string | 'uncategorized'
-
 function CategoryDetailPane({
   category,
   sources,
@@ -350,101 +348,6 @@ function CategoryDetailPane({
   )
 }
 
-function UncategorizedDetailPane({
-  sources,
-  uid,
-  onReload,
-  getAccessToken,
-}: {
-  sources: Source[]
-  uid: string
-  onReload: () => void
-  getAccessToken: () => Promise<string | null>
-}) {
-  const [addSourceOpen, setAddSourceOpen] = useState(false)
-  const [sourceActionError, setSourceActionError] = useState<string | null>(null)
-
-  async function removeSource(id: string) {
-    if (!supabase) return
-    if (!confirm('Delete this source?')) return
-    setSourceActionError(null)
-    const { error: err } = await supabase.from('sources').delete().eq('id', id).eq('user_id', uid)
-    if (err) {
-      setSourceActionError(err.message)
-      return
-    }
-    onReload()
-  }
-
-  return (
-    <section className="card settings-detail settings-category settings-category--uncategorized" aria-labelledby="uncat-heading">
-      <div className="settings-category__header">
-        <h2 id="uncat-heading" className="settings-category__title">
-          Uncategorized
-        </h2>
-      </div>
-      <p className="muted settings-category__hint">
-        Sources without a category. Article exclusions are tracked per category, so they do not apply here.
-      </p>
-      <div className="settings-category__section">
-        <h3 className="settings-category__subheading">Sources</h3>
-        {sources.length === 0 ? (
-          <p className="muted">No uncategorized sources.</p>
-        ) : (
-          <div className="sources-table-wrap">
-            <table className="sources-table">
-              <caption className="sr-only">Uncategorized sources</caption>
-              <thead>
-                <tr>
-                  <th scope="col">URL</th>
-                  <th scope="col">RSS</th>
-                  <th scope="col">Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {sources.map((s) => (
-                  <tr key={s.id}>
-                    <td>
-                      <a href={s.url} target="_blank" rel="noopener noreferrer">
-                        {s.url}
-                      </a>
-                    </td>
-                    <td>{s.use_rss ? 'Yes' : 'No'}</td>
-                    <td className="sources-table__actions">
-                      <button type="button" className="btn btn--ghost btn--small" onClick={() => void removeSource(s.id)}>
-                        Delete
-                      </button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )}
-        {sourceActionError ? (
-          <p className="form-error" role="alert">
-            {sourceActionError}
-          </p>
-        ) : null}
-        <div className="settings-add-source-action">
-          <button type="button" className="btn btn--primary" onClick={() => setAddSourceOpen(true)}>
-            Add source
-          </button>
-        </div>
-        <AddSourceModal
-          open={addSourceOpen}
-          onClose={() => setAddSourceOpen(false)}
-          categoryId={null}
-          categoryLabel="Uncategorized"
-          userId={uid}
-          getAccessToken={getAccessToken}
-          onSuccess={onReload}
-        />
-      </div>
-    </section>
-  )
-}
-
 export function SettingsPage() {
   const { user, loading: authLoading } = useAuth()
   const [categories, setCategories] = useState<Category[]>([])
@@ -452,7 +355,7 @@ export function SettingsPage() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
-  const [selectedId, setSelectedId] = useState<SettingsSelection | null>(null)
+  const [selectedId, setSelectedId] = useState<string | null>(null)
 
   const [newCatName, setNewCatName] = useState('')
   const [newCatInstruction, setNewCatInstruction] = useState('')
@@ -536,24 +439,17 @@ export function SettingsPage() {
   const sourcesByCategory = useMemo(() => {
     const map = new Map<string, Source[]>()
     for (const c of categories) map.set(c.id, [])
-    const uncategorized: Source[] = []
     for (const s of sources) {
-      if (s.category_id && map.has(s.category_id)) {
-        map.get(s.category_id)!.push(s)
-      } else {
-        uncategorized.push(s)
-      }
+      if (s.category_id && map.has(s.category_id)) map.get(s.category_id)!.push(s)
     }
-    return { map, uncategorized }
+    return map
   }, [categories, sources])
-
-  const uncategorizedCount = sourcesByCategory.uncategorized.length
 
   useEffect(() => {
     if (loading) return
 
     if (categories.length === 0) {
-      if (selectedId !== 'uncategorized') setSelectedId('uncategorized')
+      if (selectedId !== null) setSelectedId(null)
       return
     }
 
@@ -561,8 +457,6 @@ export function SettingsPage() {
       setSelectedId(categories[0]!.id)
       return
     }
-
-    if (selectedId === 'uncategorized') return
 
     const stillExists = categories.some((c) => c.id === selectedId)
     if (!stillExists) {
@@ -596,10 +490,7 @@ export function SettingsPage() {
     void reload()
   }
 
-  const selectedCategory = useMemo(
-    () => (selectedId && selectedId !== 'uncategorized' ? categories.find((c) => c.id === selectedId) : undefined),
-    [categories, selectedId],
-  )
+  const selectedCategory = useMemo(() => (selectedId ? categories.find((c) => c.id === selectedId) : undefined), [categories, selectedId])
 
   if (!supabaseConfigured) {
     return (
@@ -626,7 +517,7 @@ export function SettingsPage() {
     <div className="page page--settings">
       <h1 className="page-title">Settings</h1>
       <p className="page-lead muted">
-        Pick a category to edit instructions, sources, and exclusions. Use Uncategorized for feeds without a category.
+        Pick a category to edit instructions, sources, and exclusions.
       </p>
 
       <dialog
@@ -715,17 +606,6 @@ export function SettingsPage() {
                   {c.name}
                 </button>
               ))}
-              <button
-                type="button"
-                className={`settings-nav__item settings-nav__item--secondary${
-                  selectedId === 'uncategorized' ? ' settings-nav__item--active' : ''
-                }`}
-                aria-current={selectedId === 'uncategorized' ? 'page' : undefined}
-                onClick={() => setSelectedId('uncategorized')}
-              >
-                Uncategorized
-                {uncategorizedCount > 0 ? ` (${uncategorizedCount})` : ''}
-              </button>
             </nav>
             <div className="settings-sidebar__footer">
               <button type="button" className="btn btn--primary btn--small settings-sidebar__add-cat" onClick={openAddCategoryModal}>
@@ -735,34 +615,20 @@ export function SettingsPage() {
           </aside>
 
           <div className="settings-detail-column">
-            {selectedId === 'uncategorized' ? (
-              <>
-                {categories.length === 0 ? (
-                  <p className="muted settings-detail__intro">
-                    No categories yet. Use <strong>Add category</strong> in the sidebar to create one, or add uncategorized
-                    sources below.
-                  </p>
-                ) : null}
-                <UncategorizedDetailPane
-                  key="uncategorized"
-                  sources={sourcesByCategory.uncategorized}
-                  uid={user.id}
-                  onReload={() => void reload()}
-                  getAccessToken={getAccessToken}
-                />
-              </>
-            ) : selectedCategory ? (
+            {selectedCategory ? (
               <CategoryDetailPane
                 key={selectedCategory.id}
                 category={selectedCategory}
-                sources={sourcesByCategory.map.get(selectedCategory.id) ?? []}
+                sources={sourcesByCategory.get(selectedCategory.id) ?? []}
                 uid={user.id}
                 onReload={() => void reload()}
                 getAccessToken={getAccessToken}
               />
             ) : (
               <div className="card settings-detail settings-detail--empty">
-                <p className="muted">Select a category.</p>
+                <p className="muted">
+                  No categories yet. Use <strong>Add category</strong> in the sidebar to create one.
+                </p>
               </div>
             )}
           </div>
