@@ -91,7 +91,9 @@ export function AddSourceModal({
       return
     }
     if (!baseUrl) {
-      setResolveError('Resolve API URL is not configured (set VITE_RESOLVE_API_BASE_URL).')
+      setResolveError(
+        'Resolve API URL is not configured (set VITE_API_BASE_URL or VITE_RESOLVE_API_BASE_URL).',
+      )
       return
     }
     const token = await getAccessToken()
@@ -189,8 +191,8 @@ export function AddSourceModal({
 
         {!baseUrl ? (
           <p className="muted" role="status">
-            Set <code>VITE_RESOLVE_API_BASE_URL</code> in your environment (e.g. <code>http://127.0.0.1:5000</code>) and
-            restart the dev server.
+            Set <code>VITE_API_BASE_URL</code> or <code>VITE_RESOLVE_API_BASE_URL</code> in your environment (e.g.{' '}
+            <code>http://127.0.0.1:5000</code>) and restart the dev server.
           </p>
         ) : null}
 

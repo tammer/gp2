@@ -144,7 +144,9 @@ export function HomePage() {
 
   const handleRefresh = useCallback(async () => {
     if (!pipelineBaseUrl) {
-      setRefreshError('Pipeline API URL is not configured (set VITE_RESOLVE_API_BASE_URL or VITE_PIPELINE_API_BASE_URL).')
+      setRefreshError(
+        'Pipeline API URL is not configured (set VITE_API_BASE_URL, or VITE_RESOLVE_API_BASE_URL / VITE_PIPELINE_API_BASE_URL).',
+      )
       return
     }
     const cat = categories.find((c) => c.id === categoryId)
@@ -294,7 +296,9 @@ export function HomePage() {
     if (!filterCategory) return
     const baseUrl = getPipelineApiBaseUrl()
     if (!baseUrl) {
-      setFilterTestError('Pipeline API base URL is not configured.')
+      setFilterTestError(
+        'Pipeline API base URL is not configured (set VITE_API_BASE_URL or pipeline/resolve overrides).',
+      )
       setFilterTestResult(null)
       return
     }

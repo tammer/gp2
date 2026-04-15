@@ -1,3 +1,5 @@
+import { firstViteBaseUrl } from '@/lib/vite-env-base-url'
+
 export type EvaluateArticleRequest = {
   category_id: string
   url?: string
@@ -38,13 +40,11 @@ function readMessage(parsed: unknown): string | undefined {
 
 /** Base URL with no trailing slash, or null if unset. */
 export function getPipelineApiBaseUrl(): string | null {
-  const pipeline = import.meta.env.VITE_PIPELINE_API_BASE_URL
-  if (typeof pipeline === 'string' && pipeline.trim()) return pipeline.trim().replace(/\/$/, '')
-
-  const resolve = import.meta.env.VITE_RESOLVE_API_BASE_URL
-  if (typeof resolve === 'string' && resolve.trim()) return resolve.trim().replace(/\/$/, '')
-
-  return null
+  return firstViteBaseUrl(
+    'VITE_PIPELINE_API_BASE_URL',
+    'VITE_RESOLVE_API_BASE_URL',
+    'VITE_API_BASE_URL',
+  )
 }
 
 export async function postEvaluateArticle(

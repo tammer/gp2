@@ -1,8 +1,8 @@
+import { firstViteBaseUrl } from '@/lib/vite-env-base-url'
+
 /** Base URL with no trailing slash, or null if unset. */
 export function getResolveApiBaseUrl(): string | null {
-  const raw = import.meta.env.VITE_RESOLVE_API_BASE_URL
-  if (typeof raw !== 'string' || !raw.trim()) return null
-  return raw.trim().replace(/\/$/, '')
+  return firstViteBaseUrl('VITE_RESOLVE_API_BASE_URL', 'VITE_API_BASE_URL')
 }
 
 export type ResolveSuccessData = {

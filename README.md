@@ -20,7 +20,7 @@ Web app for personalized news articles backed by **Supabase** (Postgres + Auth +
 
    - `VITE_SUPABASE_URL`
    - `VITE_SUPABASE_ANON_KEY` (project **anon** public key only; never the service role)
-   - `VITE_RESOLVE_API_BASE_URL` — base URL for **Add source** in Settings (see [`resolve_api.md`](resolve_api.md)); e.g. `http://127.0.0.1:5000` with no trailing slash
+   - `VITE_API_BASE_URL` — canonical backend base URL for **Add source** (resolve) and pipeline APIs (see [`resolve_api.md`](resolve_api.md)); e.g. `http://127.0.0.1:5000` locally or your deployed host with **no trailing slash**. Optional: set `VITE_RESOLVE_API_BASE_URL` and/or `VITE_PIPELINE_API_BASE_URL` to override per service.
 
 5. Install and run:
 
