@@ -392,9 +392,6 @@ export function HomePage() {
                 <p style={{ margin: 0, whiteSpace: 'pre-wrap' }}>
                   Why: {filterTestResult.why.trim() ? filterTestResult.why : 'No rationale provided.'}
                 </p>
-                <p style={{ margin: 0 }}>
-                  Persisted: <strong>{filterTestResult.persisted ? 'Yes' : 'No'}</strong> ({filterTestResult.instruction_source})
-                </p>
                 <p style={{ margin: 0, whiteSpace: 'pre-wrap' }}>
                   {filterTestResult.title.trim() ? filterTestResult.title : 'Untitled article'} - {formatDate(filterTestResult.date)}
                 </p>
