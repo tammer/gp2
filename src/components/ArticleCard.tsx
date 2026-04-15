@@ -8,7 +8,7 @@ type Props = {
   view: ViewMode
   onSetRead: (id: string, read: boolean) => void
   onToggleSaved: (id: string, currentlySaved: boolean) => void
-  onEditFilter: (article: Pick<NewsArticle, 'category_id' | 'short_summary' | 'why'>) => void
+  onEditFilter: (article: Pick<NewsArticle, 'id' | 'url' | 'category_id' | 'short_summary' | 'why'>) => void
   busyRead: boolean
   busySaved: boolean
 }
@@ -105,6 +105,8 @@ export function ArticleCard({
           disabled={busy}
           onClick={() =>
             onEditFilter({
+              id: article.id,
+              url: article.url,
               category_id: article.category_id,
               short_summary: article.short_summary,
               why: article.why,

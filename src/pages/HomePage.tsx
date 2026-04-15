@@ -1,11 +1,26 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type FormEvent } from 'react'
 import { Navigate } from 'react-router-dom'
 import { ArticleCard } from '@/components/ArticleCard'
+import {
+  getPipelineApiBaseUrl,
+  postEvaluateArticle,
+  type EvaluateArticleSuccessData,
+} from '@/lib/pipeline-api'
 import { useAuth } from '@/lib/use-auth'
 import { supabase, supabaseConfigured } from '@/lib/supabase'
 import type { Category, NewsArticle } from '@/types/database'
 
 type ListView = 'unread' | 'read' | 'saved'
+
+function formatDate(iso: string | null): string {
+  if (!iso) return 'No date'
+  const d = new Date(iso)
+  if (Number.isNaN(d.getTime())) return iso
+  return d.toLocaleString(undefined, {
+    dateStyle: 'medium',
+    timeStyle: 'short',
+  })
+}
 
 export function HomePage() {
   const { user, loading: authLoading } = useAuth()
@@ -22,13 +37,24 @@ export function HomePage() {
   const [busySavedId, setBusySavedId] = useState<string | null>(null)
   const editFilterDialogRef = useRef<HTMLDialogElement | null>(null)
   const [filterCategoryId, setFilterCategoryId] = useState<string | null>(null)
+  const [filterArticleId, setFilterArticleId] = useState<string | null>(null)
+  const [filterArticleUrl, setFilterArticleUrl] = useState<string | null>(null)
   const [filterArticleSummary, setFilterArticleSummary] = useState('')
   const [filterArticleWhy, setFilterArticleWhy] = useState<string | null>(null)
   const [filterDraft, setFilterDraft] = useState('')
   const [filterBusy, setFilterBusy] = useState(false)
   const [filterError, setFilterError] = useState<string | null>(null)
+  const [filterTestBusy, setFilterTestBusy] = useState(false)
+  const [filterTestError, setFilterTestError] = useState<string | null>(null)
+  const [filterTestResult, setFilterTestResult] = useState<EvaluateArticleSuccessData | null>(null)
 
   const uid = user?.id
+
+  const getAccessToken = useCallback(async () => {
+    if (!supabase) return null
+    const { data } = await supabase.auth.getSession()
+    return data.session?.access_token ?? null
+  }, [])
 
   const loadCategories = useCallback(async () => {
     if (!supabase || !uid) return
@@ -136,30 +162,38 @@ export function HomePage() {
     [categories, filterCategoryId],
   )
 
-  function openEditFilterModal(article: Pick<NewsArticle, 'category_id' | 'short_summary' | 'why'>) {
+  function openEditFilterModal(article: Pick<NewsArticle, 'id' | 'url' | 'category_id' | 'short_summary' | 'why'>) {
     const category = categories.find((c) => c.id === article.category_id)
     if (!category) return
     setFilterCategoryId(category.id)
+    setFilterArticleId(article.id)
+    setFilterArticleUrl(article.url)
     setFilterArticleSummary(article.short_summary)
     setFilterArticleWhy(article.why)
     setFilterDraft(category.instruction)
     setFilterError(null)
+    setFilterTestError(null)
+    setFilterTestResult(null)
     const dialog = editFilterDialogRef.current
     if (!dialog) return
     if (!dialog.open) dialog.showModal()
   }
 
   function closeEditFilterModal() {
-    if (filterBusy) return
+    if (filterBusy || filterTestBusy) return
     editFilterDialogRef.current?.close()
   }
 
   function onEditFilterDialogClose() {
     setFilterCategoryId(null)
+    setFilterArticleId(null)
+    setFilterArticleUrl(null)
     setFilterArticleSummary('')
     setFilterArticleWhy(null)
     setFilterDraft('')
     setFilterError(null)
+    setFilterTestError(null)
+    setFilterTestResult(null)
   }
 
   async function handleSaveFilter(e: FormEvent<HTMLFormElement>) {
@@ -179,6 +213,74 @@ export function HomePage() {
     }
     await loadCategories()
     editFilterDialogRef.current?.close()
+  }
+
+  async function handleTestFilter() {
+    if (!filterCategory) return
+    const baseUrl = getPipelineApiBaseUrl()
+    if (!baseUrl) {
+      setFilterTestError('Pipeline API base URL is not configured.')
+      setFilterTestResult(null)
+      return
+    }
+
+    const accessToken = await getAccessToken()
+    if (!accessToken) {
+      setFilterTestError('Session expired or unavailable. Sign in again and retry.')
+      setFilterTestResult(null)
+      return
+    }
+
+    if (!filterArticleId && !filterArticleUrl) {
+      setFilterTestError('No article is selected to test.')
+      setFilterTestResult(null)
+      return
+    }
+
+    setFilterTestBusy(true)
+    setFilterTestError(null)
+    setFilterTestResult(null)
+
+    const outcome = await postEvaluateArticle(
+      baseUrl,
+      filterArticleId
+        ? {
+            category_id: filterCategory.id,
+            article_id: filterArticleId,
+            instructions_override: filterDraft,
+            persist: false,
+          }
+        : {
+            category_id: filterCategory.id,
+            url: filterArticleUrl ?? undefined,
+            instructions_override: filterDraft,
+            persist: false,
+          },
+      accessToken,
+    )
+    setFilterTestBusy(false)
+
+    if (outcome.kind === 'success') {
+      setFilterTestResult(outcome.data)
+      return
+    }
+
+    if (outcome.kind === 'business_error') {
+      setFilterTestError(outcome.message)
+      return
+    }
+
+    if (outcome.kind === 'unauthorized') {
+      setFilterTestError(outcome.message)
+      return
+    }
+
+    if (outcome.kind === 'bad_response') {
+      setFilterTestError(outcome.message)
+      return
+    }
+
+    setFilterTestError(outcome.message)
   }
 
   const viewButtons = useMemo(
@@ -233,7 +335,7 @@ export function HomePage() {
         aria-labelledby="edit-filter-modal-title"
         onClose={onEditFilterDialogClose}
         onCancel={(e) => {
-          if (filterBusy) e.preventDefault()
+          if (filterBusy || filterTestBusy) e.preventDefault()
         }}
         onClick={(e) => {
           if (e.target === e.currentTarget) closeEditFilterModal()
@@ -247,7 +349,7 @@ export function HomePage() {
             <button
               type="button"
               className="btn btn--ghost btn--small"
-              disabled={filterBusy}
+              disabled={filterBusy || filterTestBusy}
               onClick={closeEditFilterModal}
               aria-label="Close"
             >
@@ -277,20 +379,56 @@ export function HomePage() {
                 rows={10}
                 value={filterDraft}
                 onChange={(e) => setFilterDraft(e.target.value)}
-                disabled={filterBusy}
+                disabled={filterBusy || filterTestBusy}
                 spellCheck
               />
             </label>
+            {filterTestResult ? (
+              <div className="field">
+                <span className="field__label">Test result</span>
+                <p style={{ margin: 0 }}>
+                  Decision: <strong>{filterTestResult.included ? 'Included' : 'Excluded'}</strong>
+                </p>
+                <p style={{ margin: 0, whiteSpace: 'pre-wrap' }}>
+                  Why: {filterTestResult.why.trim() ? filterTestResult.why : 'No rationale provided.'}
+                </p>
+                <p style={{ margin: 0 }}>
+                  Persisted: <strong>{filterTestResult.persisted ? 'Yes' : 'No'}</strong> ({filterTestResult.instruction_source})
+                </p>
+                <p style={{ margin: 0, whiteSpace: 'pre-wrap' }}>
+                  {filterTestResult.title.trim() ? filterTestResult.title : 'Untitled article'} - {formatDate(filterTestResult.date)}
+                </p>
+                <p style={{ margin: 0, whiteSpace: 'pre-wrap' }}>
+                  {filterTestResult.source.trim() ? filterTestResult.source : 'Unknown source'}
+                </p>
+                <p style={{ margin: 0, whiteSpace: 'pre-wrap' }}>
+                  {filterTestResult.url.trim() ? filterTestResult.url : 'No URL in response.'}
+                </p>
+              </div>
+            ) : null}
             {filterError ? (
               <p className="form-error" role="alert">
                 {filterError}
               </p>
             ) : null}
+            {filterTestError ? (
+              <p className="form-error" role="alert">
+                {filterTestError}
+              </p>
+            ) : null}
             <div className="modal-dialog__footer">
-              <button type="button" className="btn btn--ghost" disabled={filterBusy} onClick={closeEditFilterModal}>
+              <button type="button" className="btn btn--ghost" disabled={filterBusy || filterTestBusy} onClick={closeEditFilterModal}>
                 Cancel
               </button>
-              <button type="submit" className="btn btn--primary" disabled={filterBusy || !filterCategory}>
+              <button
+                type="button"
+                className="btn btn--secondary"
+                disabled={filterBusy || filterTestBusy || !filterCategory || (!filterArticleId && !filterArticleUrl)}
+                onClick={() => void handleTestFilter()}
+              >
+                {filterTestBusy ? 'Testing…' : 'Test Filter'}
+              </button>
+              <button type="submit" className="btn btn--primary" disabled={filterBusy || filterTestBusy || !filterCategory}>
                 {filterBusy ? 'Saving…' : 'Save'}
               </button>
             </div>
