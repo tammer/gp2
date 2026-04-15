@@ -14,6 +14,7 @@ export type NewsArticle = {
   article_date: string | null
   source: string
   short_summary: string
+  why: string | null
   full_summary: string
   read: boolean
   saved: boolean

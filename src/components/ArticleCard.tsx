@@ -8,7 +8,7 @@ type Props = {
   view: ViewMode
   onSetRead: (id: string, read: boolean) => void
   onToggleSaved: (id: string, currentlySaved: boolean) => void
-  onEditFilter: (categoryId: string) => void
+  onEditFilter: (article: Pick<NewsArticle, 'category_id' | 'short_summary' | 'why'>) => void
   busyRead: boolean
   busySaved: boolean
 }
@@ -99,7 +99,18 @@ export function ArticleCard({
         >
           {isSaved ? 'Unsave' : 'Save'}
         </button>
-        <button type="button" className="btn btn--ghost" disabled={busy} onClick={() => onEditFilter(article.category_id)}>
+        <button
+          type="button"
+          className="btn btn--ghost"
+          disabled={busy}
+          onClick={() =>
+            onEditFilter({
+              category_id: article.category_id,
+              short_summary: article.short_summary,
+              why: article.why,
+            })
+          }
+        >
           Edit Filter
         </button>
         {showMarkRead ? (

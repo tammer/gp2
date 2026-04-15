@@ -22,6 +22,8 @@ export function HomePage() {
   const [busySavedId, setBusySavedId] = useState<string | null>(null)
   const editFilterDialogRef = useRef<HTMLDialogElement | null>(null)
   const [filterCategoryId, setFilterCategoryId] = useState<string | null>(null)
+  const [filterArticleSummary, setFilterArticleSummary] = useState('')
+  const [filterArticleWhy, setFilterArticleWhy] = useState<string | null>(null)
   const [filterDraft, setFilterDraft] = useState('')
   const [filterBusy, setFilterBusy] = useState(false)
   const [filterError, setFilterError] = useState<string | null>(null)
@@ -69,7 +71,7 @@ export function HomePage() {
     let q = supabase
       .from('news_articles')
       .select(
-        'id,user_id,category_id,url,headline,article_date,source,short_summary,full_summary,read,saved,inserted_at,updated_at',
+        'id,user_id,category_id,url,headline,article_date,source,short_summary,why,full_summary,read,saved,inserted_at,updated_at',
       )
       .eq('user_id', uid)
       .eq('category_id', categoryId)
@@ -134,10 +136,12 @@ export function HomePage() {
     [categories, filterCategoryId],
   )
 
-  function openEditFilterModal(articleCategoryId: string) {
-    const category = categories.find((c) => c.id === articleCategoryId)
+  function openEditFilterModal(article: Pick<NewsArticle, 'category_id' | 'short_summary' | 'why'>) {
+    const category = categories.find((c) => c.id === article.category_id)
     if (!category) return
     setFilterCategoryId(category.id)
+    setFilterArticleSummary(article.short_summary)
+    setFilterArticleWhy(article.why)
     setFilterDraft(category.instruction)
     setFilterError(null)
     const dialog = editFilterDialogRef.current
@@ -152,6 +156,8 @@ export function HomePage() {
 
   function onEditFilterDialogClose() {
     setFilterCategoryId(null)
+    setFilterArticleSummary('')
+    setFilterArticleWhy(null)
     setFilterDraft('')
     setFilterError(null)
   }
@@ -252,6 +258,18 @@ export function HomePage() {
             <p className="muted">
               Category: <strong>{filterCategory?.name ?? 'Unknown'}</strong>
             </p>
+            <div className="field">
+              <span className="field__label">Article short summary</span>
+              <p style={{ margin: 0, whiteSpace: 'pre-wrap' }}>
+                {filterArticleSummary.trim() ? filterArticleSummary : 'No short summary.'}
+              </p>
+            </div>
+            <div className="field">
+              <span className="field__label">Why</span>
+              <p style={{ margin: 0, whiteSpace: 'pre-wrap' }}>
+                {filterArticleWhy && filterArticleWhy.trim() ? filterArticleWhy : 'No why text.'}
+              </p>
+            </div>
             <label className="field">
               <span className="field__label">Instructions (markdown)</span>
               <textarea
