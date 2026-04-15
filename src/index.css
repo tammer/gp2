@@ -961,6 +961,17 @@ code {
   font-weight: 650;
 }
 
+.settings-category__header-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.settings-category__delete-btn {
+  color: var(--danger);
+}
+
 .settings-category__rename-form {
   display: flex;
   flex-wrap: wrap;

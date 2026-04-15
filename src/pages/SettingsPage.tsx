@@ -36,6 +36,8 @@ function CategoryDetailPane({
 
   const [addSourceOpen, setAddSourceOpen] = useState(false)
   const [sourceActionError, setSourceActionError] = useState<string | null>(null)
+  const [deleteBusy, setDeleteBusy] = useState(false)
+  const [deleteError, setDeleteError] = useState<string | null>(null)
 
   const [exclStatus, setExclStatus] = useState<'idle' | 'loading' | 'done' | 'error'>('idle')
   const [exclRows, setExclRows] = useState<ExclusionRow[]>([])
@@ -101,12 +103,26 @@ function CategoryDetailPane({
   }
 
   async function removeSource(id: string) {
-    if (!supabase) return
+    if (!supabase || deleteBusy) return
     if (!confirm('Delete this source?')) return
     setSourceActionError(null)
     const { error: err } = await supabase.from('sources').delete().eq('id', id).eq('user_id', uid)
     if (err) {
       setSourceActionError(err.message)
+      return
+    }
+    onReload()
+  }
+
+  async function deleteCategory() {
+    if (!supabase || deleteBusy) return
+    if (!confirm(`Delete category "${category.name}"? This permanently removes its sources, articles, and exclusions.`)) return
+    setDeleteBusy(true)
+    setDeleteError(null)
+    const { error: err } = await supabase.from('categories').delete().eq('id', category.id).eq('user_id', uid)
+    setDeleteBusy(false)
+    if (err) {
+      setDeleteError(err.message)
       return
     }
     onReload()
@@ -167,12 +183,27 @@ function CategoryDetailPane({
             <h2 id={`cat-heading-${category.id}`} className="settings-category__title">
               {category.name}
             </h2>
-            <button type="button" className="btn btn--secondary btn--small" onClick={() => setRenaming(true)}>
-              Rename
-            </button>
+            <div className="settings-category__header-actions">
+              <button type="button" className="btn btn--secondary btn--small" onClick={() => setRenaming(true)} disabled={deleteBusy}>
+                Rename
+              </button>
+              <button
+                type="button"
+                className="btn btn--ghost btn--small settings-category__delete-btn"
+                onClick={() => void deleteCategory()}
+                disabled={deleteBusy}
+              >
+                {deleteBusy ? 'Deleting…' : 'Delete category'}
+              </button>
+            </div>
           </>
         )}
       </div>
+      {deleteError ? (
+        <p className="form-error" role="alert">
+          {deleteError}
+        </p>
+      ) : null}
 
       <div className="settings-category__section">
         {instrEditing || hasInstruction ? <h3 className="settings-category__subheading">Instructions</h3> : null}
@@ -194,13 +225,13 @@ function CategoryDetailPane({
               </p>
             ) : null}
             <div className="form-actions">
-              <button type="submit" className="btn btn--primary" disabled={instrBusy}>
+              <button type="submit" className="btn btn--primary" disabled={instrBusy || deleteBusy}>
                 {instrBusy ? 'Saving…' : 'Save'}
               </button>
               <button
                 type="button"
                 className="btn btn--ghost"
-                disabled={instrBusy}
+                disabled={instrBusy || deleteBusy}
                 onClick={() => {
                   setInstrDraft(category.instruction)
                   setInstrError(null)
@@ -239,6 +270,7 @@ function CategoryDetailPane({
               <button
                 type="button"
                 className="btn btn--primary"
+                disabled={deleteBusy}
                 onClick={() => {
                   setInstrSuccess(null)
                   setInstrEditing(true)
@@ -276,7 +308,12 @@ function CategoryDetailPane({
                     </td>
                     <td>{s.use_rss ? 'Yes' : 'No'}</td>
                     <td className="sources-table__actions">
-                      <button type="button" className="btn btn--ghost btn--small" onClick={() => void removeSource(s.id)}>
+                      <button
+                        type="button"
+                        className="btn btn--ghost btn--small"
+                        disabled={deleteBusy}
+                        onClick={() => void removeSource(s.id)}
+                      >
                         Delete
                       </button>
                     </td>
@@ -292,7 +329,7 @@ function CategoryDetailPane({
           </p>
         ) : null}
         <div className="settings-add-source-action">
-          <button type="button" className="btn btn--primary" onClick={() => setAddSourceOpen(true)}>
+          <button type="button" className="btn btn--primary" onClick={() => setAddSourceOpen(true)} disabled={deleteBusy}>
             Add source
           </button>
         </div>
