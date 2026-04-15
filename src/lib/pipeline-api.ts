@@ -158,3 +158,383 @@ export async function postEvaluateArticle(
     }
   }
 }
+
+// --- Pipeline run (async job + poll) — POST /api/pipeline/run, GET /api/pipeline/run/<job_id>
+
+export type PipelineRunRequest = {
+  category?: string | null
+  source?: string | null
+  max_articles?: number
+  timeout?: number
+  content_max_chars?: number
+  reprocess?: boolean
+}
+
+export type PipelineJobStatus = 'queued' | 'running' | 'succeeded' | 'failed'
+
+export type PipelineRunPollParams = {
+  user_id: string
+  category: string | null
+  source: string | null
+  max_articles: number
+  timeout: number
+  content_max_chars: number
+  reprocess: boolean
+}
+
+/** One row per processed URL when status === succeeded (API-safe; no raw HTML). */
+export type PipelineArticleDecision = {
+  url: string
+  source: string
+  title: string | null
+  date: string | null
+  short_summary: string | null
+  full_summary: string | null
+  included: boolean
+  reason: string | null
+}
+
+export type PipelineRunPollBody = {
+  ok: true
+  job_id: string
+  status: PipelineJobStatus
+  started_at: string | null
+  finished_at: string | null
+  params: PipelineRunPollParams
+  result: PipelineArticleDecision[] | null
+  error: string | null
+}
+
+export type PostPipelineRunOutcome =
+  | { kind: 'success'; jobId: string }
+  | { kind: 'aborted' }
+  | { kind: 'business_error'; error: string; message: string }
+  | { kind: 'unauthorized'; message: string }
+  | { kind: 'bad_response'; httpStatus: number; message: string }
+  | { kind: 'network'; message: string }
+
+export type GetPipelineRunOutcome =
+  | { kind: 'success'; body: PipelineRunPollBody }
+  | { kind: 'aborted' }
+  | { kind: 'not_found'; message: string }
+  | { kind: 'forbidden'; message: string }
+  | { kind: 'unauthorized'; message: string }
+  | { kind: 'bad_response'; httpStatus: number; message: string }
+  | { kind: 'network'; message: string }
+
+export type PollPipelineRunOutcome =
+  | { kind: 'success'; result: PipelineArticleDecision[] }
+  | { kind: 'failed'; error: string }
+  | { kind: 'aborted' }
+  | { kind: 'business_error'; error: string; message: string }
+  | { kind: 'unauthorized'; message: string }
+  | { kind: 'bad_response'; httpStatus: number; message: string }
+  | { kind: 'not_found'; message: string }
+  | { kind: 'forbidden'; message: string }
+  | { kind: 'network'; message: string }
+
+function isAbortError(e: unknown): boolean {
+  return e instanceof DOMException && e.name === 'AbortError'
+}
+
+function parsePipelinePollBody(parsed: unknown): PipelineRunPollBody | null {
+  if (!parsed || typeof parsed !== 'object') return null
+  const o = parsed as Record<string, unknown>
+  if (o.ok !== true) return null
+  const jobId = o.job_id
+  const status = o.status
+  if (typeof jobId !== 'string' || typeof status !== 'string') return null
+  if (status !== 'queued' && status !== 'running' && status !== 'succeeded' && status !== 'failed') return null
+  const params = o.params
+  if (!params || typeof params !== 'object') return null
+  const p = params as Record<string, unknown>
+  if (
+    typeof p.user_id !== 'string' ||
+    (p.category !== null && typeof p.category !== 'string') ||
+    (p.source !== null && typeof p.source !== 'string') ||
+    typeof p.max_articles !== 'number' ||
+    typeof p.timeout !== 'number' ||
+    typeof p.content_max_chars !== 'number' ||
+    typeof p.reprocess !== 'boolean'
+  ) {
+    return null
+  }
+  return {
+    ok: true,
+    job_id: jobId,
+    status: status as PipelineJobStatus,
+    started_at: typeof o.started_at === 'string' ? o.started_at : null,
+    finished_at: typeof o.finished_at === 'string' ? o.finished_at : null,
+    params: {
+      user_id: p.user_id,
+      category: p.category === null ? null : (p.category as string),
+      source: p.source === null ? null : (p.source as string),
+      max_articles: p.max_articles,
+      timeout: p.timeout,
+      content_max_chars: p.content_max_chars,
+      reprocess: p.reprocess,
+    },
+    result: Array.isArray(o.result)
+      ? (o.result as PipelineArticleDecision[])
+      : o.result === null || o.result === undefined
+        ? null
+        : null,
+    error: typeof o.error === 'string' ? o.error : o.error === null || o.error === undefined ? null : null,
+  }
+}
+
+/** Start a background pipeline run; returns job_id for polling. */
+export async function postPipelineRun(
+  baseUrl: string,
+  accessToken: string,
+  payload: PipelineRunRequest,
+  signal?: AbortSignal,
+): Promise<PostPipelineRunOutcome> {
+  const root = baseUrl.replace(/\/$/, '')
+  const url = `${root}/api/pipeline/run`
+
+  try {
+    const res = await fetch(url, {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(payload),
+      signal,
+    })
+
+    const text = await res.text()
+    let parsed: unknown
+    try {
+      parsed = text ? JSON.parse(text) : null
+    } catch {
+      return {
+        kind: 'bad_response',
+        httpStatus: res.status,
+        message: 'Pipeline server returned invalid JSON.',
+      }
+    }
+
+    if (res.status === 401) {
+      return {
+        kind: 'unauthorized',
+        message: readMessage(parsed) ?? 'Session expired or not authorized. Sign in again and retry.',
+      }
+    }
+
+    if (res.status === 202) {
+      if (!parsed || typeof parsed !== 'object') {
+        return {
+          kind: 'bad_response',
+          httpStatus: res.status,
+          message: 'Empty response from pipeline server.',
+        }
+      }
+      const body = parsed as Record<string, unknown>
+      if (body.ok === true && typeof body.job_id === 'string') {
+        return { kind: 'success', jobId: body.job_id }
+      }
+      const error = typeof body.error === 'string' ? body.error : 'request_error'
+      const message =
+        typeof body.message === 'string' ? body.message : 'Could not start pipeline run.'
+      return { kind: 'business_error', error, message }
+    }
+
+    if (!res.ok) {
+      const body = parsed && typeof parsed === 'object' ? (parsed as Record<string, unknown>) : null
+      if (body && body.ok === false) {
+        const error = typeof body.error === 'string' ? body.error : 'request_error'
+        const message = typeof body.message === 'string' ? body.message : `Pipeline request failed (${res.status}).`
+        return { kind: 'business_error', error, message }
+      }
+      return {
+        kind: 'bad_response',
+        httpStatus: res.status,
+        message: readMessage(parsed) ?? `Pipeline request failed (${res.status}).`,
+      }
+    }
+
+    return {
+      kind: 'bad_response',
+      httpStatus: res.status,
+      message: readMessage(parsed) ?? `Unexpected status ${res.status} from pipeline run.`,
+    }
+  } catch (e) {
+    if (isAbortError(e)) {
+      return { kind: 'aborted' }
+    }
+    return {
+      kind: 'network',
+      message: e instanceof Error ? e.message : 'Network error while contacting pipeline server.',
+    }
+  }
+}
+
+/** Poll a single job status (one GET). */
+export async function getPipelineRun(
+  baseUrl: string,
+  accessToken: string,
+  jobId: string,
+  signal?: AbortSignal,
+): Promise<GetPipelineRunOutcome> {
+  const root = baseUrl.replace(/\/$/, '')
+  const url = `${root}/api/pipeline/run/${encodeURIComponent(jobId)}`
+
+  try {
+    const res = await fetch(url, {
+      method: 'GET',
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+      },
+      signal,
+    })
+
+    const text = await res.text()
+    let parsed: unknown
+    try {
+      parsed = text ? JSON.parse(text) : null
+    } catch {
+      return {
+        kind: 'bad_response',
+        httpStatus: res.status,
+        message: 'Pipeline server returned invalid JSON.',
+      }
+    }
+
+    if (res.status === 401) {
+      return {
+        kind: 'unauthorized',
+        message: readMessage(parsed) ?? 'Session expired or not authorized. Sign in again and retry.',
+      }
+    }
+
+    if (res.status === 403) {
+      const body = parsed && typeof parsed === 'object' ? (parsed as Record<string, unknown>) : null
+      return {
+        kind: 'forbidden',
+        message:
+          (body && typeof body.message === 'string' ? body.message : null) ??
+          'Not allowed to view this job.',
+      }
+    }
+
+    if (res.status === 404) {
+      return {
+        kind: 'not_found',
+        message:
+          readMessage(parsed) ??
+          'Job not found. It may have expired after a server restart, or the job id is invalid.',
+      }
+    }
+
+    if (!res.ok) {
+      const body = parsed && typeof parsed === 'object' ? (parsed as Record<string, unknown>) : null
+      if (body && body.ok === false) {
+        const message = typeof body.message === 'string' ? body.message : `Pipeline request failed (${res.status}).`
+        return { kind: 'bad_response', httpStatus: res.status, message }
+      }
+      return {
+        kind: 'bad_response',
+        httpStatus: res.status,
+        message: readMessage(parsed) ?? `Pipeline request failed (${res.status}).`,
+      }
+    }
+
+    const body = parsePipelinePollBody(parsed)
+    if (!body) {
+      return {
+        kind: 'bad_response',
+        httpStatus: res.status,
+        message: 'Pipeline poll response missing required fields.',
+      }
+    }
+
+    return { kind: 'success', body }
+  } catch (e) {
+    if (isAbortError(e)) {
+      return { kind: 'aborted' }
+    }
+    return {
+      kind: 'network',
+      message: e instanceof Error ? e.message : 'Network error while contacting pipeline server.',
+    }
+  }
+}
+
+const POLL_INITIAL_MS = 1500
+const POLL_MAX_MS = 25000
+const POLL_BACKOFF = 1.35
+
+function delay(ms: number, signal?: AbortSignal): Promise<void> {
+  return new Promise((resolve, reject) => {
+    if (signal?.aborted) {
+      reject(new DOMException('Aborted', 'AbortError'))
+      return
+    }
+    const onAbort = () => {
+      window.clearTimeout(id)
+      signal?.removeEventListener('abort', onAbort)
+      reject(new DOMException('Aborted', 'AbortError'))
+    }
+    const id = window.setTimeout(() => {
+      signal?.removeEventListener('abort', onAbort)
+      resolve()
+    }, ms)
+    signal?.addEventListener('abort', onAbort)
+  })
+}
+
+/**
+ * POST /api/pipeline/run then poll until succeeded, failed, or error.
+ * Pass `signal` to cancel when the user leaves the page or changes category.
+ */
+export async function pollPipelineRun(
+  baseUrl: string,
+  accessToken: string,
+  request: PipelineRunRequest,
+  signal?: AbortSignal,
+): Promise<PollPipelineRunOutcome> {
+  const start = await postPipelineRun(baseUrl, accessToken, request, signal)
+  if (start.kind === 'aborted') {
+    return { kind: 'aborted' }
+  }
+  if (start.kind !== 'success') {
+    return start
+  }
+
+  let waitMs = POLL_INITIAL_MS
+  for (;;) {
+    if (signal?.aborted) {
+      return { kind: 'aborted' }
+    }
+
+    const poll = await getPipelineRun(baseUrl, accessToken, start.jobId, signal)
+    if (poll.kind === 'aborted') {
+      return { kind: 'aborted' }
+    }
+    if (poll.kind !== 'success') {
+      return poll
+    }
+
+    const { status, result, error } = poll.body
+    if (status === 'succeeded') {
+      return { kind: 'success', result: Array.isArray(result) ? result : [] }
+    }
+    if (status === 'failed') {
+      return {
+        kind: 'failed',
+        error: typeof error === 'string' && error.trim() ? error : 'Pipeline run failed.',
+      }
+    }
+
+    try {
+      await delay(waitMs, signal)
+    } catch (e) {
+      if (isAbortError(e)) return { kind: 'aborted' }
+      throw e
+    }
+
+    waitMs = Math.min(Math.round(waitMs * POLL_BACKOFF), POLL_MAX_MS)
+  }
+}

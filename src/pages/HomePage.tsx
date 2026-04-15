@@ -3,6 +3,7 @@ import { Navigate } from 'react-router-dom'
 import { ArticleCard } from '@/components/ArticleCard'
 import {
   getPipelineApiBaseUrl,
+  pollPipelineRun,
   postEvaluateArticle,
   type EvaluateArticleSuccessData,
 } from '@/lib/pipeline-api'
@@ -48,7 +49,13 @@ export function HomePage() {
   const [filterTestError, setFilterTestError] = useState<string | null>(null)
   const [filterTestResult, setFilterTestResult] = useState<EvaluateArticleSuccessData | null>(null)
 
+  const [refreshBusy, setRefreshBusy] = useState(false)
+  const [refreshError, setRefreshError] = useState<string | null>(null)
+  const refreshAbortRef = useRef<AbortController | null>(null)
+
   const uid = user?.id
+
+  const pipelineBaseUrl = useMemo(() => getPipelineApiBaseUrl(), [])
 
   const getAccessToken = useCallback(async () => {
     if (!supabase) return null
@@ -124,6 +131,74 @@ export function HomePage() {
     }
     void loadArticles()
   }, [uid, categoryId, listView, loadArticles])
+
+  useEffect(() => {
+    refreshAbortRef.current?.abort()
+  }, [categoryId])
+
+  useEffect(() => {
+    return () => {
+      refreshAbortRef.current?.abort()
+    }
+  }, [])
+
+  const handleRefresh = useCallback(async () => {
+    if (!pipelineBaseUrl) {
+      setRefreshError('Pipeline API URL is not configured (set VITE_RESOLVE_API_BASE_URL or VITE_PIPELINE_API_BASE_URL).')
+      return
+    }
+    const cat = categories.find((c) => c.id === categoryId)
+    const name = cat?.name?.trim()
+    if (!name) return
+
+    const token = await getAccessToken()
+    if (!token) {
+      setRefreshError('No session token. Sign in again.')
+      return
+    }
+
+    refreshAbortRef.current?.abort()
+    const ac = new AbortController()
+    refreshAbortRef.current = ac
+
+    setRefreshBusy(true)
+    setRefreshError(null)
+    try {
+      const out = await pollPipelineRun(pipelineBaseUrl, token, { category: name }, ac.signal)
+      if (out.kind === 'aborted') return
+      if (out.kind === 'success') {
+        await loadArticles()
+        return
+      }
+      if (out.kind === 'failed') {
+        setRefreshError(out.error)
+        return
+      }
+      if (out.kind === 'unauthorized') {
+        setRefreshError(out.message)
+        return
+      }
+      if (out.kind === 'business_error') {
+        setRefreshError(out.message)
+        return
+      }
+      if (out.kind === 'bad_response') {
+        setRefreshError(out.message)
+        return
+      }
+      if (out.kind === 'not_found') {
+        setRefreshError(out.message)
+        return
+      }
+      if (out.kind === 'forbidden') {
+        setRefreshError(out.message)
+        return
+      }
+      setRefreshError(out.message)
+    } finally {
+      setRefreshBusy(false)
+    }
+  }, [pipelineBaseUrl, categories, categoryId, getAccessToken, loadArticles])
 
   async function patchArticle(id: string, patch: Partial<Pick<NewsArticle, 'read' | 'saved'>>) {
     if (!supabase || !uid) return
@@ -449,6 +524,22 @@ export function HomePage() {
               </option>
             ))}
           </select>
+          <button
+            type="button"
+            className="btn btn--secondary btn--small"
+            aria-busy={refreshBusy}
+            aria-label="Refresh articles for this category"
+            disabled={
+              catLoading ||
+              categories.length === 0 ||
+              !categoryId ||
+              refreshBusy ||
+              !pipelineBaseUrl
+            }
+            onClick={() => void handleRefresh()}
+          >
+            {refreshBusy ? 'Refreshing…' : 'Refresh'}
+          </button>
           <div className="view-toggle" role="group" aria-label="Article list view">
             {viewButtons}
           </div>
@@ -458,6 +549,12 @@ export function HomePage() {
       {catError ? (
         <p className="inline-error" role="alert">
           {catError}
+        </p>
+      ) : null}
+
+      {refreshError ? (
+        <p className="inline-error" role="alert">
+          {refreshError}
         </p>
       ) : null}
 
