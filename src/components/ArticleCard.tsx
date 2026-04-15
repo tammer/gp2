@@ -40,13 +40,25 @@ export function ArticleCard({
 
   return (
     <article className="article">
-      <div className="article__source-row">
-        {article.source.trim() ? (
-          <span className="article__source-chip" style={getSourceChipColors(article.source)}>
-            {article.source}
-          </span>
+      <div className="article__header">
+        <div className="article__source-row">
+          {article.source.trim() ? (
+            <span className="article__source-chip" style={getSourceChipColors(article.source)}>
+              {article.source}
+            </span>
+          ) : null}
+          <p className="article__meta">{formatDate(article.article_date)}</p>
+        </div>
+        {showMarkRead ? (
+          <button
+            type="button"
+            className="btn btn--primary btn--small article__mark-read-top"
+            disabled={busy}
+            onClick={() => onSetRead(article.id, true)}
+          >
+            Mark read
+          </button>
         ) : null}
-        <p className="article__meta">{formatDate(article.article_date)}</p>
       </div>
       <div className="article__section">
         <p className="article__short-summary">
@@ -61,17 +73,7 @@ export function ArticleCard({
             }
           >
             {article.short_summary ? article.short_summary : 'No short summary.'}
-          </a>{' '}
-          {showMarkRead ? (
-            <button
-              type="button"
-              className="btn btn--primary btn--inline-mark-read"
-              disabled={busy}
-              onClick={() => onSetRead(article.id, true)}
-            >
-              Mark read
-            </button>
-          ) : null}
+          </a>
         </p>
       </div>
       {/* <h2 className="article__headline">
@@ -116,7 +118,12 @@ export function ArticleCard({
           Edit Filter
         </button>
         {showMarkRead ? (
-          <button type="button" className="btn btn--primary" disabled={busy} onClick={() => onSetRead(article.id, true)}>
+          <button
+            type="button"
+            className="btn btn--primary btn--small"
+            disabled={busy}
+            onClick={() => onSetRead(article.id, true)}
+          >
             Mark read
           </button>
         ) : null}
