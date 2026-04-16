@@ -626,7 +626,7 @@ export function SettingsPage() {
       {loading ? (
         <p className="muted">Loading…</p>
       ) : (
-        <div className="settings-layout">
+        <div className="settings-split">
           <aside className="settings-sidebar" aria-label="Category list">
             <nav className="settings-nav" aria-label="Categories">
               {categories.map((c) => (
@@ -635,6 +635,7 @@ export function SettingsPage() {
                   type="button"
                   className={`settings-nav__item${selectedId === c.id ? ' settings-nav__item--active' : ''}`}
                   aria-current={selectedId === c.id ? 'page' : undefined}
+                  aria-controls="settings-category-detail"
                   onClick={() => setSelectedId(c.id)}
                 >
                   {c.name}
@@ -648,7 +649,12 @@ export function SettingsPage() {
             </div>
           </aside>
 
-          <div className="settings-detail-column">
+          <div
+            id="settings-category-detail"
+            className="settings-detail-column"
+            role="region"
+            aria-label="Category settings"
+          >
             {selectedCategory ? (
               <CategoryDetailPane
                 key={selectedCategory.id}
