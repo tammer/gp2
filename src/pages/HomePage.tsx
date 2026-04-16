@@ -239,15 +239,42 @@ export function HomePage() {
     [categories, filterCategoryId],
   )
 
-  function openEditFilterModal(article: Pick<NewsArticle, 'id' | 'url' | 'category_id' | 'short_summary' | 'why'>) {
-    const category = categories.find((c) => c.id === article.category_id)
-    if (!category) return
-    setFilterCategoryId(category.id)
+  async function openEditFilterModal(article: Pick<NewsArticle, 'id' | 'url' | 'category_id' | 'short_summary' | 'why'>) {
+    if (!supabase || !uid) return
+    setArtError(null)
+    const { data, error } = await supabase
+      .from('categories')
+      .select('id,user_id,name,instruction')
+      .eq('id', article.category_id)
+      .eq('user_id', uid)
+      .maybeSingle()
+    if (error) {
+      setArtError(`Failed to load latest filter instructions: ${error.message}`)
+      return
+    }
+    if (!data) {
+      setArtError('This category no longer exists. Refresh categories and try again.')
+      return
+    }
+
+    const latestCategory = data as Category
+    setCategories((prev) => {
+      const next = [...prev]
+      const idx = next.findIndex((c) => c.id === latestCategory.id)
+      if (idx === -1) {
+        next.push(latestCategory)
+      } else {
+        next[idx] = latestCategory
+      }
+      return next.sort((a, b) => a.name.localeCompare(b.name))
+    })
+
+    setFilterCategoryId(latestCategory.id)
     setFilterArticleId(article.id)
     setFilterArticleUrl(article.url)
     setFilterArticleSummary(article.short_summary)
     setFilterArticleWhy(article.why)
-    setFilterDraft(category.instruction)
+    setFilterDraft(latestCategory.instruction)
     setFilterError(null)
     setFilterTestError(null)
     setFilterTestResult(null)
