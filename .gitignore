@@ -13,3 +13,6 @@ dist-ssr
 
 # Editor
 .DS_Store
+
+# Claude Code
+.claude/worktrees/
