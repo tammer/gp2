@@ -1,23 +1,18 @@
 # GistPrism
 
-Use GistPrism to filter and summarize the internet.
+## Use GistPrism to filter and summarize the internet.
 
-## Filter
+You specify
 
-You specify the sources producing content you want to read and the typoe of content you want.
+- the websites producing content you want
+- the rules about what you want and don't want to see.
 
-"For sports news I am only interested in hockey and baseball and nothing else."
+techcrunch.com: I am not interested in anything crypto related.
 
-GistPrism gives you concise summaryies of the content that passes through your filter.
+## Why?
 
-## Filtering
+Because the signal to noise ratio on the internet is low. And most content is not nearly as concise as it should he.
 
-<what quote goes here?>
+## Outcome
 
-The singal to noise ratio on the internet is low. GistPrism improves it.
-
-## Summaries
-
-"If I Had More Time, I Would Have Written a Shorter Letter"
-
-Almost all content on the internet today suffers from a lack of concision. GistPrism fixes that.
+You get a feed of content you want presented concisely.
