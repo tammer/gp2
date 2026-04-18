@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type FormEvent } from 'react'
-import { Navigate } from 'react-router-dom'
 import { ArticleCard } from '@/components/ArticleCard'
+import { LandingPage } from '@/pages/LandingPage'
 import {
   getPipelineApiBaseUrl,
   pollPipelineRun,
@@ -430,7 +430,7 @@ export function HomePage() {
   }
 
   if (!user) {
-    return <Navigate to="/auth" replace />
+    return <LandingPage />
   }
 
   return (
