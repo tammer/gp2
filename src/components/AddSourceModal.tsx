@@ -10,6 +10,9 @@ import {
 } from '@/lib/resolve-api'
 import { supabase } from '@/lib/supabase'
 
+const RESOLVE_FAILURE_SUFFIX =
+  'Message me if this site should work. (I basically vibe coded this thing.)'
+
 function isProbablyUrl(s: string): boolean {
   try {
     const u = new URL(s)
@@ -114,6 +117,9 @@ export function AddSourceModal({
     const outcome = await postResolveSource(baseUrl, q, token)
     setResolveBusy(false)
 
+    const withResolveFailureNote = (message: string) =>
+      message.trimEnd().endsWith(RESOLVE_FAILURE_SUFFIX) ? message : `${message.trimEnd()} ${RESOLVE_FAILURE_SUFFIX}`
+
     switch (outcome.kind) {
       case 'success':
         setMeta(outcome.data)
@@ -127,16 +133,16 @@ export function AddSourceModal({
         setResolveError(outcome.message)
         return
       case 'business_error':
-        setResolveError(`${outcome.message} (${outcome.error})`)
+        setResolveError(withResolveFailureNote(`${outcome.message} (${outcome.error})`))
         return
       case 'bad_response':
-        setResolveError(outcome.message)
+        setResolveError(withResolveFailureNote(outcome.message))
         return
       case 'network':
-        setResolveError(outcome.message)
+        setResolveError(withResolveFailureNote(outcome.message))
         return
       default:
-        setResolveError('Unexpected resolve error.')
+        setResolveError(withResolveFailureNote('Unexpected resolve error.'))
     }
   }
 
