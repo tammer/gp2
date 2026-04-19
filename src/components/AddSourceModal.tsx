@@ -1,6 +1,11 @@
 import { useEffect, useRef, useState, type FormEvent } from 'react'
 import { Link } from 'react-router-dom'
-import { getResolveApiBaseUrl, postResolveSource, type ResolveSuccessData } from '@/lib/resolve-api'
+import {
+  getResolveApiBaseUrl,
+  postPipelineRun,
+  postResolveSource,
+  type ResolveSuccessData,
+} from '@/lib/resolve-api'
 import { supabase } from '@/lib/supabase'
 
 function isProbablyUrl(s: string): boolean {
@@ -146,16 +151,32 @@ export function AddSourceModal({
     }
     if (!supabase) return
     setInsertBusy(true)
-    const { error: err } = await supabase.from('sources').insert({
-      user_id: userId,
-      url: u,
-      use_rss: reviewUseRss,
-      category_id: categoryId,
-    })
+    const { data: inserted, error: err } = await supabase
+      .from('sources')
+      .insert({
+        user_id: userId,
+        url: u,
+        use_rss: reviewUseRss,
+        category_id: categoryId,
+      })
+      .select('id')
+      .single()
     setInsertBusy(false)
     if (err) {
       setInsertError(err.message)
       return
+    }
+    const newId =
+      inserted && typeof inserted === 'object' && 'id' in inserted && typeof inserted.id === 'string'
+        ? inserted.id
+        : ''
+    if (newId && baseUrl) {
+      const t = await getAccessToken()
+      if (t) {
+        void postPipelineRun(baseUrl, { source: newId }, t).then((o) => {
+          if (o.kind !== 'success') console.error('postPipelineRun failed', o)
+        })
+      }
     }
     onSuccess()
     closeModal()

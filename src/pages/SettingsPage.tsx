@@ -5,7 +5,12 @@ import remarkGfm from 'remark-gfm'
 import rehypeSanitize from 'rehype-sanitize'
 import { AddSourceModal } from '@/components/AddSourceModal'
 import tammerFiltersCatalog from '@/data/tammer-filters-catalog.json'
-import { getResolveApiBaseUrl, postUserSourcesImport, type UserSourcesImportCatalog } from '@/lib/resolve-api'
+import {
+  getResolveApiBaseUrl,
+  postPipelineRun,
+  postUserSourcesImport,
+  type UserSourcesImportCatalog,
+} from '@/lib/resolve-api'
 import { useAuth } from '@/lib/use-auth'
 import { supabase, supabaseConfigured } from '@/lib/supabase'
 import { clearTammerImportPromptPending, isTammerImportPromptPending } from '@/lib/tammer-import-onboarding'
@@ -456,6 +461,16 @@ export function SettingsPage() {
       setTammerImportError('Not signed in or session expired.')
       return
     }
+    if (!supabase || !uid) {
+      setTammerImportError('Not signed in or Supabase not configured.')
+      return
+    }
+    const { data: beforeRows, error: beforeErr } = await supabase.from('sources').select('id').eq('user_id', uid)
+    if (beforeErr) {
+      setTammerImportError(beforeErr.message)
+      return
+    }
+    const beforeIds = new Set((beforeRows ?? []).map((r) => r.id))
     setTammerImportBusy(true)
     const outcome = await postUserSourcesImport(
       base,
@@ -464,6 +479,16 @@ export function SettingsPage() {
     )
     setTammerImportBusy(false)
     if (outcome.kind === 'success') {
+      const { data: afterRows, error: afterErr } = await supabase.from('sources').select('id').eq('user_id', uid)
+      if (!afterErr && afterRows) {
+        const newIds = afterRows.map((r) => r.id).filter((id) => !beforeIds.has(id))
+        void Promise.all(
+          newIds.map(async (id) => {
+            const o = await postPipelineRun(base, { source: id }, token)
+            if (o.kind !== 'success') console.error('postPipelineRun failed', id, o)
+          }),
+        )
+      }
       clearTammerImportPromptPending()
       closeTammerImportModal()
       void reload()

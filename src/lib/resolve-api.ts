@@ -235,3 +235,119 @@ export async function postUserSourcesImport(
     }
   }
 }
+
+/** Request body for POST /api/pipeline/run (see Resolve API docs). */
+export type PipelineRunParams = {
+  category?: string
+  source?: string
+  user_id?: string
+  max_articles?: number
+  timeout?: number
+  content_max_chars?: number
+  reprocess?: boolean
+}
+
+export type PipelineRunAccepted = {
+  job_id: string
+  status: string
+}
+
+export type PipelineRunOutcome =
+  | { kind: 'success'; data: PipelineRunAccepted }
+  | { kind: 'business_error'; error: string; message: string }
+  | { kind: 'unauthorized'; message: string }
+  | { kind: 'bad_response'; httpStatus: number; message: string }
+  | { kind: 'network'; message: string }
+
+export async function postPipelineRun(
+  baseUrl: string,
+  params: PipelineRunParams,
+  accessToken: string,
+): Promise<PipelineRunOutcome> {
+  const root = baseUrl.replace(/\/$/, '')
+  const url = `${root}/api/pipeline/run`
+  try {
+    const res = await fetch(url, {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(params),
+    })
+
+    const text = await res.text()
+    let parsed: unknown
+    try {
+      parsed = text ? JSON.parse(text) : null
+    } catch {
+      return {
+        kind: 'bad_response',
+        httpStatus: res.status,
+        message: 'Resolve server returned invalid JSON.',
+      }
+    }
+
+    if (res.status === 401) {
+      return {
+        kind: 'unauthorized',
+        message:
+          readMessage(parsed) ??
+          'Session expired or not authorized. Sign in again and retry.',
+      }
+    }
+
+    if (res.status === 202) {
+      if (!parsed || typeof parsed !== 'object') {
+        return {
+          kind: 'bad_response',
+          httpStatus: res.status,
+          message: 'Empty response from resolve server.',
+        }
+      }
+      const body = parsed as Record<string, unknown>
+      if (body.ok !== true) {
+        const error = typeof body.error === 'string' ? body.error : 'pipeline_run_failed'
+        const message =
+          typeof body.message === 'string' ? body.message : 'Pipeline run was rejected.'
+        return { kind: 'business_error', error, message }
+      }
+      const job_id = body.job_id
+      const status = body.status
+      if (typeof job_id !== 'string' || typeof status !== 'string') {
+        return {
+          kind: 'bad_response',
+          httpStatus: res.status,
+          message: 'Pipeline run response missing job_id or status.',
+        }
+      }
+      return { kind: 'success', data: { job_id, status } }
+    }
+
+    if (!res.ok) {
+      const body = parsed && typeof parsed === 'object' ? (parsed as Record<string, unknown>) : null
+      if (body && body.ok === false) {
+        const error = typeof body.error === 'string' ? body.error : 'pipeline_run_failed'
+        const message =
+          typeof body.message === 'string' ? body.message : `Pipeline run failed (${res.status}).`
+        return { kind: 'business_error', error, message }
+      }
+      return {
+        kind: 'bad_response',
+        httpStatus: res.status,
+        message: readMessage(parsed) ?? `Pipeline run request failed (${res.status}).`,
+      }
+    }
+
+    return {
+      kind: 'bad_response',
+      httpStatus: res.status,
+      message: readMessage(parsed) ?? `Unexpected status ${res.status} for pipeline run.`,
+    }
+  } catch (e) {
+    return {
+      kind: 'network',
+      message: e instanceof Error ? e.message : 'Network error while contacting resolve server.',
+    }
+  }
+}
