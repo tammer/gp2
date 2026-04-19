@@ -1,0 +1,12 @@
+---
+description: Canonical URL for news-manager Resolve HTTP API reference (for agents)
+alwaysApply: true
+---
+
+# News Manager — Resolve API documentation
+
+When implementing or debugging **client calls**, **proxies**, **env vars**, or **auth** against the **Resolve API** (Flask app from `news_manager.resolve_app`, CLI `resolve-api`), treat this URL as the **authoritative** reference:
+
+https://raw.githubusercontent.com/tammer/news-manager/refs/heads/main/docs/api/for_agents.md
+
+**Reminder:** Prefer fetching or opening that document over guessing route paths, status codes, request/response shapes, or required environment variables.
