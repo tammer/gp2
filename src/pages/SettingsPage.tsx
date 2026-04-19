@@ -4,8 +4,11 @@ import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
 import rehypeSanitize from 'rehype-sanitize'
 import { AddSourceModal } from '@/components/AddSourceModal'
+import tammerFiltersCatalog from '@/data/tammer-filters-catalog.json'
+import { getResolveApiBaseUrl, postUserSourcesImport, type UserSourcesImportCatalog } from '@/lib/resolve-api'
 import { useAuth } from '@/lib/use-auth'
 import { supabase, supabaseConfigured } from '@/lib/supabase'
+import { clearTammerImportPromptPending, isTammerImportPromptPending } from '@/lib/tammer-import-onboarding'
 import type { Category, NewsArticleExclusion, Source } from '@/types/database'
 
 type ExclusionRow = Pick<NewsArticleExclusion, 'category_id' | 'url' | 'why' | 'excluded_at'>
@@ -410,6 +413,10 @@ export function SettingsPage() {
   const [addCatError, setAddCatError] = useState<string | null>(null)
   const addCategoryDialogRef = useRef<HTMLDialogElement>(null)
 
+  const tammerImportDialogRef = useRef<HTMLDialogElement>(null)
+  const [tammerImportBusy, setTammerImportBusy] = useState(false)
+  const [tammerImportError, setTammerImportError] = useState<string | null>(null)
+
   const uid = user?.id
 
   const getAccessToken = useCallback(async () => {
@@ -425,6 +432,51 @@ export function SettingsPage() {
 
   function closeAddCategoryModal() {
     addCategoryDialogRef.current?.close()
+  }
+
+  function closeTammerImportModal() {
+    tammerImportDialogRef.current?.close()
+  }
+
+  function declineTammerImport() {
+    clearTammerImportPromptPending()
+    setTammerImportError(null)
+    closeTammerImportModal()
+  }
+
+  async function confirmTammerImport() {
+    setTammerImportError(null)
+    const base = getResolveApiBaseUrl()
+    if (!base) {
+      setTammerImportError('Resolve API base URL not configured.')
+      return
+    }
+    const token = await getAccessToken()
+    if (!token) {
+      setTammerImportError('Not signed in or session expired.')
+      return
+    }
+    setTammerImportBusy(true)
+    const outcome = await postUserSourcesImport(
+      base,
+      tammerFiltersCatalog as UserSourcesImportCatalog,
+      token,
+    )
+    setTammerImportBusy(false)
+    if (outcome.kind === 'success') {
+      clearTammerImportPromptPending()
+      closeTammerImportModal()
+      void reload()
+      return
+    }
+    if (outcome.kind === 'unauthorized') {
+      setTammerImportError(outcome.message)
+      return
+    }
+    if (outcome.kind === 'business_error' || outcome.kind === 'bad_response' || outcome.kind === 'network') {
+      setTammerImportError(outcome.message)
+      return
+    }
   }
 
   function onAddCategoryDialogClose() {
@@ -482,6 +534,20 @@ export function SettingsPage() {
       }
     })()
   }, [uid, loadCategories, loadSources])
+
+  useEffect(() => {
+    if (loading || authLoading || !uid) return
+    if (categories.length > 0) {
+      clearTammerImportPromptPending()
+      if (tammerImportDialogRef.current?.open) tammerImportDialogRef.current.close()
+      return
+    }
+    if (!isTammerImportPromptPending()) return
+    const d = tammerImportDialogRef.current
+    if (!d || d.open) return
+    setTammerImportError(null)
+    d.showModal()
+  }, [loading, authLoading, uid, categories.length])
 
   const sourcesByCategory = useMemo(() => {
     const map = new Map<string, Source[]>()
@@ -627,6 +693,54 @@ export function SettingsPage() {
               </button>
             </div>
           </form>
+        </div>
+      </dialog>
+
+      <dialog
+        ref={tammerImportDialogRef}
+        className="modal-dialog"
+        aria-labelledby="tammer-import-modal-title"
+        onCancel={(e) => {
+          e.preventDefault()
+        }}
+        onClose={() => {
+          setTammerImportError(null)
+        }}
+      >
+        <div className="modal-dialog__panel">
+          <header className="modal-dialog__header">
+            <h2 id="tammer-import-modal-title" className="modal-dialog__title">
+              Import Tammer&apos;s filters?
+            </h2>
+            <button
+              type="button"
+              className="btn btn--ghost btn--small"
+              disabled={tammerImportBusy}
+              onClick={() => declineTammerImport()}
+              aria-label="Close"
+            >
+              Close
+            </button>
+          </header>
+          <div className="form-grid">
+            <p className="field--full muted">
+              Add Tammer&apos;s curated categories and sources to your account. You can edit or delete them afterward
+              in Settings.
+            </p>
+            {tammerImportError ? (
+              <p className="form-error field--full" role="alert">
+                {tammerImportError}
+              </p>
+            ) : null}
+            <div className="modal-dialog__footer">
+              <button type="button" className="btn btn--ghost" disabled={tammerImportBusy} onClick={() => declineTammerImport()}>
+                No thanks
+              </button>
+              <button type="button" className="btn btn--primary" disabled={tammerImportBusy} onClick={() => void confirmTammerImport()}>
+                {tammerImportBusy ? 'Importing…' : 'Yes, import'}
+              </button>
+            </div>
+          </div>
         </div>
       </dialog>
 
