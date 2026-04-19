@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type FormEvent, type SyntheticEvent } from 'react'
-import { Navigate } from 'react-router-dom'
+import { Link, Navigate } from 'react-router-dom'
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
 import rehypeSanitize from 'rehype-sanitize'
@@ -9,6 +9,16 @@ import { supabase, supabaseConfigured } from '@/lib/supabase'
 import type { Category, NewsArticleExclusion, Source } from '@/types/database'
 
 type ExclusionRow = Pick<NewsArticleExclusion, 'category_id' | 'url' | 'why' | 'excluded_at'>
+
+function SettingsBackToHomeLink() {
+  return (
+    <p className="page-back">
+      <Link to="/" className="page-back__link">
+        ← Back to Articles
+      </Link>
+    </p>
+  )
+}
 
 function CategoryDetailPane({
   category,
@@ -532,6 +542,7 @@ export function SettingsPage() {
   if (!supabaseConfigured) {
     return (
       <div className="page page--narrow">
+        <SettingsBackToHomeLink />
         <h1 className="page-title">Settings</h1>
         <p className="muted">Configure Supabase first.</p>
       </div>
@@ -541,6 +552,7 @@ export function SettingsPage() {
   if (authLoading) {
     return (
       <div className="page">
+        <SettingsBackToHomeLink />
         <p className="muted">Loading…</p>
       </div>
     )
@@ -552,6 +564,7 @@ export function SettingsPage() {
 
   return (
     <div className="page page--settings">
+      <SettingsBackToHomeLink />
       <h1 className="page-title">Settings</h1>
 
       <dialog

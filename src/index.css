@@ -193,6 +193,21 @@ code {
   min-height: 0;
 }
 
+.page-back {
+  margin: 0 0 0.35rem;
+  font-size: 0.9rem;
+}
+
+.page-back__link {
+  color: var(--muted);
+  text-decoration: none;
+}
+
+.page-back__link:hover {
+  color: var(--accent);
+  text-decoration: underline;
+}
+
 .page-title {
   font-size: 1.75rem;
   margin: 0 0 0.5rem;
