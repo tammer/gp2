@@ -493,7 +493,10 @@ export function HomePage() {
               <div className="field">
                 <span className="field__label">Test result</span>
                 <p style={{ margin: 0 }}>
-                  Decision: <strong>{filterTestResult.included ? 'Included' : 'Excluded'}</strong>
+                  Decision:{' '}
+                  <strong style={{ color: filterTestResult.included ? 'var(--success)' : 'var(--danger)' }}>
+                    {filterTestResult.included ? 'Included' : 'Excluded'}
+                  </strong>
                 </p>
                 <p style={{ margin: 0, whiteSpace: 'pre-wrap' }}>
                   Why: {filterTestResult.why.trim() ? filterTestResult.why : 'No rationale provided.'}

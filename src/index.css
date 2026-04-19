@@ -8,6 +8,7 @@
   --accent: #58a6ff;
   --accent-muted: #388bfd66;
   --danger: #f85149;
+  --success: #3fb950;
   --radius: 8px;
   font-family:
     'Segoe UI',
@@ -30,6 +31,7 @@
     --accent: #0969da;
     --accent-muted: #0969da22;
     --danger: #cf222e;
+    --success: #1a7f37;
   }
 }
 
