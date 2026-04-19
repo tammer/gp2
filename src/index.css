@@ -966,6 +966,17 @@ code {
   padding: 1.25rem;
 }
 
+.settings-empty-actions {
+  margin-top: 1rem;
+  display: flex;
+  justify-content: center;
+}
+
+.settings-empty-error {
+  margin-top: 0.75rem;
+  margin-bottom: 0;
+}
+
 @media (max-width: 640px) {
   .settings-split {
     grid-template-columns: 1fr;

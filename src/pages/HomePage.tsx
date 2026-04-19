@@ -1,5 +1,4 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type FormEvent } from 'react'
-import { useNavigate } from 'react-router-dom'
 import { ArticleCard } from '@/components/ArticleCard'
 import { LandingPage } from '@/pages/LandingPage'
 import {
@@ -11,7 +10,6 @@ import {
 import { usePipelinePending } from '@/lib/pipeline-pending-context'
 import { useAuth } from '@/lib/use-auth'
 import { supabase, supabaseConfigured } from '@/lib/supabase'
-import { clearTammerImportPromptPending, isTammerImportPromptPending } from '@/lib/tammer-import-onboarding'
 import type { Category, NewsArticle } from '@/types/database'
 
 type ListView = 'unread' | 'read' | 'saved'
@@ -27,7 +25,6 @@ function formatDate(iso: string | null): string {
 }
 
 export function HomePage() {
-  const navigate = useNavigate()
   const { user, loading: authLoading } = useAuth()
   const { pendingPipelineRunCount, notifyRunAccepted, notifyRunSettled } = usePipelinePending()
   const [categories, setCategories] = useState<Category[]>([])
@@ -97,17 +94,6 @@ export function HomePage() {
     }
     void loadCategories()
   }, [uid, loadCategories])
-
-  useEffect(() => {
-    if (!user || catLoading) return
-    if (categories.length > 0) {
-      clearTammerImportPromptPending()
-      return
-    }
-    if (isTammerImportPromptPending()) {
-      navigate('/settings', { replace: true })
-    }
-  }, [user, catLoading, categories.length, navigate])
 
   const loadArticles = useCallback(async () => {
     if (!supabase || !uid || !categoryId) {
@@ -629,8 +615,7 @@ export function HomePage() {
       ) : categories.length === 0 ? (
         <div className="empty-state">
           <p>
-            <strong>No categories yet.</strong> Add categories in Settings, or wait until your ingestion pipeline
-            creates them. Articles are grouped by category.
+            <strong>Nothing to show. Go to settings to set sources and filtering instructions.</strong>
           </p>
         </div>
       ) : artLoading ? (

@@ -1,7 +1,6 @@
 import { useCallback, useEffect, useMemo, useState, type ReactNode } from 'react'
 import type { Session } from '@supabase/supabase-js'
 import { AuthContext } from '@/lib/auth-context'
-import { setTammerImportPromptPending } from '@/lib/tammer-import-onboarding'
 import { supabase } from '@/lib/supabase'
 
 export function AuthProvider({ children }: { children: ReactNode }) {
@@ -25,10 +24,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     const {
       data: { subscription },
-    } = supabase.auth.onAuthStateChange((event, s) => {
-      // Offer bundled filters import on Settings when categories are empty (not on INITIAL_SESSION).
-      // Session key: TAMMER_IMPORT_PROMPT_SESSION_KEY in tammer-import-onboarding.ts.
-      if (event === 'SIGNED_IN') setTammerImportPromptPending()
+    } = supabase.auth.onAuthStateChange((_event, s) => {
       setSession(s)
     })
 

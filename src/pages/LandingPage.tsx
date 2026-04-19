@@ -39,10 +39,10 @@ export function LandingPage() {
               filtered)
             </p>
             <p>
-              If you try it you will start with my filters and you&apos;ll see how it works.&nbsp;&nbsp;You can then
+              If you try it you can start with my filters and you&apos;ll see how it works.&nbsp;&nbsp;You can then
               modify.
             </p>
-            <p>I like it and use it. I&apos;m curious if others will find utility.</p>
+            <p>I like it and use it. I&apos;m keen to know if you find it useful.</p>
           </div>
         </div>
 
