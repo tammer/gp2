@@ -10,6 +10,8 @@
   --danger: #f85149;
   --success: #3fb950;
   --radius: 8px;
+  /* Category / article instructions: ~8% smaller than previous step sizes. */
+  --instruction-font-scale: 0.92;
   font-family:
     'Segoe UI',
     system-ui,
@@ -95,22 +97,6 @@ code {
   background: #d2992222;
   border-bottom: 1px solid var(--border);
   font-size: 0.9rem;
-}
-
-/* Full-bleed horizontally; sticky in the home scroll area. */
-.refresh-pending-banner {
-  position: sticky;
-  top: 0;
-  z-index: 2;
-  margin: 0 -1.25rem 0.85rem;
-  padding: 0.35rem 1.25rem;
-  border-bottom: 1px solid color-mix(in srgb, var(--accent) 28%, var(--border));
-  background: color-mix(in srgb, var(--accent-muted) 65%, var(--surface));
-  font-size: 0.78rem;
-  font-weight: 600;
-  letter-spacing: 0.02em;
-  text-align: center;
-  color: var(--text);
 }
 
 .app-header {
@@ -649,7 +635,7 @@ code {
 
 .textarea--instruction {
   font-family: ui-monospace, 'Cascadia Code', 'Source Code Pro', Menlo, monospace;
-  font-size: 0.9rem;
+  font-size: calc(0.9rem * var(--instruction-font-scale));
   line-height: 1.45;
   min-height: 10rem;
   overflow-y: auto;
@@ -704,13 +690,6 @@ code {
   overflow: hidden;
 }
 
-.instruction-view__toolbar {
-  display: flex;
-  flex-shrink: 0;
-  justify-content: flex-end;
-  margin-top: 0.75rem;
-}
-
 .instruction-view > .form-error,
 .instruction-view > .form-success {
   flex-shrink: 0;
@@ -745,7 +724,7 @@ code {
   border: 1px solid var(--border);
   border-radius: var(--radius);
   background: var(--surface);
-  font-size: 1rem;
+  font-size: calc(1rem * var(--instruction-font-scale));
   line-height: 1.6;
   overflow-y: auto;
   overscroll-behavior: contain;
@@ -775,17 +754,17 @@ code {
 }
 
 .instruction-markdown h1 {
-  font-size: 1.5rem;
+  font-size: calc(1.5rem * var(--instruction-font-scale));
   border-bottom: 1px solid var(--border);
   padding-bottom: 0.35rem;
 }
 
 .instruction-markdown h2 {
-  font-size: 1.25rem;
+  font-size: calc(1.25rem * var(--instruction-font-scale));
 }
 
 .instruction-markdown h3 {
-  font-size: 1.1rem;
+  font-size: calc(1.1rem * var(--instruction-font-scale));
 }
 
 .instruction-markdown p {
@@ -826,7 +805,7 @@ code {
   border-radius: var(--radius);
   background: var(--bg);
   border: 1px solid var(--border);
-  font-size: 0.88rem;
+  font-size: calc(0.88rem * var(--instruction-font-scale));
   line-height: 1.5;
 }
 
@@ -844,7 +823,7 @@ code {
   width: 100%;
   border-collapse: collapse;
   margin: 1em 0;
-  font-size: 0.92rem;
+  font-size: calc(0.92rem * var(--instruction-font-scale));
 }
 
 .instruction-markdown th,
@@ -1070,6 +1049,45 @@ code {
   font-weight: 600;
 }
 
+.settings-instructions-panel {
+  padding: 1rem 1.15rem 1.15rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--bg);
+}
+
+.settings-instructions-panel__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin-bottom: 0.85rem;
+  padding-bottom: 0.7rem;
+  border-bottom: 1px solid var(--border);
+}
+
+.settings-instructions-panel__title {
+  margin: 0;
+  flex: 1 1 auto;
+  min-width: 0;
+  font-size: 1.25rem;
+  font-weight: 650;
+  letter-spacing: -0.02em;
+  color: var(--text);
+}
+
+.settings-instructions-panel__actions {
+  flex-shrink: 0;
+}
+
+.settings-instructions-panel__body {
+  min-width: 0;
+}
+
+.settings-instructions-panel__body.form-stack {
+  gap: 0.75rem;
+}
+
 .settings-category__hint {
   margin: 0 0 0.75rem;
   font-size: 0.9rem;
@@ -1090,6 +1108,23 @@ code {
   border-radius: 0;
   background: transparent;
   padding: 0;
+}
+
+/* Instructions live inside inset panel: prose reads as one block with the title. */
+.settings-category .settings-instructions-panel .instruction-markdown {
+  margin-top: 0.15rem;
+  padding: 0.65rem 0.75rem;
+  border: 1px solid var(--border);
+  border-radius: calc(var(--radius) - 2px);
+  background: color-mix(in srgb, var(--surface) 55%, var(--bg));
+}
+
+.settings-category .settings-instructions-panel .instruction-markdown pre {
+  background: var(--bg);
+}
+
+.settings-category .settings-instructions-panel .textarea--instruction {
+  background: color-mix(in srgb, var(--surface) 55%, var(--bg));
 }
 
 .settings-exclusions {

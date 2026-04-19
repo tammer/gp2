@@ -449,11 +449,6 @@ export function HomePage() {
 
   return (
     <div className="page">
-      {refreshBusy ? (
-        <div className="refresh-pending-banner" role="status" aria-live="polite" aria-busy="true">
-          Agents have been deployed; content will updated asynchronously.
-        </div>
-      ) : null}
       <dialog
         ref={editFilterDialogRef}
         className="modal-dialog"

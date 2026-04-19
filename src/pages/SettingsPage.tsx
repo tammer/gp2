@@ -224,81 +224,92 @@ function CategoryDetailPane({
       ) : null}
 
       <div className="settings-category__section">
-        {instrEditing || hasInstruction ? <h3 className="settings-category__subheading">Instructions</h3> : null}
-        {instrEditing ? (
-          <form className="form-stack" onSubmit={saveInstruction}>
-            <label className="field instruction-field-grow">
-              <span className="field__label">Markdown</span>
-              <textarea
-                className="textarea textarea--instruction"
-                rows={10}
-                value={instrDraft}
-                onChange={(e) => setInstrDraft(e.target.value)}
-                spellCheck
-              />
-            </label>
-            {instrError ? (
-              <p className="form-error" role="alert">
-                {instrError}
-              </p>
-            ) : null}
-            <div className="form-actions">
-              <button type="submit" className="btn btn--primary" disabled={instrBusy || deleteBusy}>
-                {instrBusy ? 'Saving…' : 'Save'}
-              </button>
-              <button
-                type="button"
-                className="btn btn--ghost"
-                disabled={instrBusy || deleteBusy}
-                onClick={() => {
-                  setInstrDraft(category.instruction)
-                  setInstrError(null)
-                  setInstrEditing(false)
-                }}
-              >
-                Cancel
-              </button>
-            </div>
-          </form>
-        ) : (
-          <div className="instruction-view">
-            {instrSuccess ? (
-              <p className="form-success" role="status">
-                {instrSuccess}
-              </p>
-            ) : null}
-            {hasInstruction ? (
-              <div className="instruction-markdown">
-                <ReactMarkdown
-                  remarkPlugins={[remarkGfm]}
-                  rehypePlugins={[rehypeSanitize]}
-                  components={{
-                    a: ({ href, children, ...props }) => (
-                      <a href={href} target="_blank" rel="noopener noreferrer" {...props}>
-                        {children}
-                      </a>
-                    ),
+        <section
+          className="settings-instructions-panel"
+          aria-labelledby={`instructions-heading-${category.id}`}
+        >
+          <div className="settings-instructions-panel__header">
+            <h3 id={`instructions-heading-${category.id}`} className="settings-instructions-panel__title">
+              Instructions
+            </h3>
+            {!instrEditing ? (
+              <div className="settings-instructions-panel__actions">
+                <button
+                  type="button"
+                  className="btn btn--primary"
+                  disabled={deleteBusy}
+                  onClick={() => {
+                    setInstrSuccess(null)
+                    setInstrEditing(true)
                   }}
                 >
-                  {category.instruction}
-                </ReactMarkdown>
+                  {hasInstruction ? 'Edit Instructions' : 'Add instructions'}
+                </button>
               </div>
             ) : null}
-            <div className="instruction-view__toolbar">
-              <button
-                type="button"
-                className="btn btn--primary"
-                disabled={deleteBusy}
-                onClick={() => {
-                  setInstrSuccess(null)
-                  setInstrEditing(true)
-                }}
-              >
-                {hasInstruction ? 'Edit' : 'Add instructions'}
-              </button>
-            </div>
           </div>
-        )}
+          {instrEditing ? (
+            <form className="form-stack settings-instructions-panel__body" onSubmit={saveInstruction}>
+              <label className="field instruction-field-grow">
+                <span className="field__label">Markdown</span>
+                <textarea
+                  className="textarea textarea--instruction"
+                  rows={10}
+                  value={instrDraft}
+                  onChange={(e) => setInstrDraft(e.target.value)}
+                  spellCheck
+                />
+              </label>
+              {instrError ? (
+                <p className="form-error" role="alert">
+                  {instrError}
+                </p>
+              ) : null}
+              <div className="form-actions">
+                <button type="submit" className="btn btn--primary" disabled={instrBusy || deleteBusy}>
+                  {instrBusy ? 'Saving…' : 'Save'}
+                </button>
+                <button
+                  type="button"
+                  className="btn btn--ghost"
+                  disabled={instrBusy || deleteBusy}
+                  onClick={() => {
+                    setInstrDraft(category.instruction)
+                    setInstrError(null)
+                    setInstrEditing(false)
+                  }}
+                >
+                  Cancel
+                </button>
+              </div>
+            </form>
+          ) : (
+            <div className="instruction-view settings-instructions-panel__body">
+              {instrSuccess ? (
+                <p className="form-success" role="status">
+                  {instrSuccess}
+                </p>
+              ) : null}
+              {hasInstruction ? (
+                <div className="instruction-markdown">
+                  <ReactMarkdown
+                    remarkPlugins={[remarkGfm]}
+                    rehypePlugins={[rehypeSanitize]}
+                    components={{
+                      a: ({ href, children, ...props }) => (
+                        <a href={href} target="_blank" rel="noopener noreferrer" {...props}>
+                          {children}
+                        </a>
+                      ),
+                    }}
+                  >
+                    {category.instruction}
+                  </ReactMarkdown>
+                </div>
+              ) : null}
+            </div>
+          )}
+        </section>
       </div>
 
       <div className="settings-category__section">
@@ -697,7 +708,7 @@ export function SettingsPage() {
             <label className="field field--full">
               <span className="field__label">Initial instructions (optional, markdown)</span>
               <textarea
-                className="textarea"
+                className="textarea textarea--instruction"
                 rows={4}
                 value={newCatInstruction}
                 onChange={(e) => setNewCatInstruction(e.target.value)}
