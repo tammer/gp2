@@ -233,6 +233,12 @@ export type PollPipelineRunOutcome =
   | { kind: 'forbidden'; message: string }
   | { kind: 'network'; message: string }
 
+export type PollPipelineRunOptions = {
+  signal?: AbortSignal
+  onRunAccepted?: () => void
+  onRunSettled?: () => void
+}
+
 function isAbortError(e: unknown): boolean {
   return e instanceof DOMException && e.name === 'AbortError'
 }
@@ -485,31 +491,20 @@ function delay(ms: number, signal?: AbortSignal): Promise<void> {
   })
 }
 
-/**
- * POST /api/pipeline/run then poll until succeeded, failed, or error.
- * Pass `signal` to cancel when the user leaves the page or changes category.
- */
-export async function pollPipelineRun(
+/** Poll `GET /api/pipeline/run/<job_id>` until succeeded, failed, or non-recoverable outcome. */
+export async function pollPipelineJobUntilTerminal(
   baseUrl: string,
   accessToken: string,
-  request: PipelineRunRequest,
+  jobId: string,
   signal?: AbortSignal,
 ): Promise<PollPipelineRunOutcome> {
-  const start = await postPipelineRun(baseUrl, accessToken, request, signal)
-  if (start.kind === 'aborted') {
-    return { kind: 'aborted' }
-  }
-  if (start.kind !== 'success') {
-    return start
-  }
-
   let waitMs = POLL_INITIAL_MS
   for (;;) {
     if (signal?.aborted) {
       return { kind: 'aborted' }
     }
 
-    const poll = await getPipelineRun(baseUrl, accessToken, start.jobId, signal)
+    const poll = await getPipelineRun(baseUrl, accessToken, jobId, signal)
     if (poll.kind === 'aborted') {
       return { kind: 'aborted' }
     }
@@ -536,5 +531,32 @@ export async function pollPipelineRun(
     }
 
     waitMs = Math.min(Math.round(waitMs * POLL_BACKOFF), POLL_MAX_MS)
+  }
+}
+
+/**
+ * POST /api/pipeline/run then poll until succeeded, failed, or error.
+ * Pass `options.signal` to cancel when the user leaves the page or changes category.
+ */
+export async function pollPipelineRun(
+  baseUrl: string,
+  accessToken: string,
+  request: PipelineRunRequest,
+  options?: PollPipelineRunOptions,
+): Promise<PollPipelineRunOutcome> {
+  const signal = options?.signal
+  const start = await postPipelineRun(baseUrl, accessToken, request, signal)
+  if (start.kind === 'aborted') {
+    return { kind: 'aborted' }
+  }
+  if (start.kind !== 'success') {
+    return start
+  }
+
+  options?.onRunAccepted?.()
+  try {
+    return await pollPipelineJobUntilTerminal(baseUrl, accessToken, start.jobId, signal)
+  } finally {
+    options?.onRunSettled?.()
   }
 }

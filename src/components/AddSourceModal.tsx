@@ -1,5 +1,7 @@
 import { useEffect, useRef, useState, type FormEvent } from 'react'
 import { Link } from 'react-router-dom'
+import { pollPipelineJobUntilTerminal } from '@/lib/pipeline-api'
+import { usePipelinePending } from '@/lib/pipeline-pending-context'
 import {
   getResolveApiBaseUrl,
   postPipelineRun,
@@ -39,6 +41,7 @@ export function AddSourceModal({
   getAccessToken,
   onSuccess,
 }: AddSourceModalProps) {
+  const { notifyRunAccepted, notifyRunSettled } = usePipelinePending()
   const dialogRef = useRef<HTMLDialogElement>(null)
 
   const [step, setStep] = useState<Step>('query')
@@ -173,9 +176,19 @@ export function AddSourceModal({
     if (newId && baseUrl) {
       const t = await getAccessToken()
       if (t) {
-        void postPipelineRun(baseUrl, { source: newId }, t).then((o) => {
-          if (o.kind !== 'success') console.error('postPipelineRun failed', o)
-        })
+        void (async () => {
+          const o = await postPipelineRun(baseUrl, { source: newId }, t)
+          if (o.kind !== 'success') {
+            console.error('postPipelineRun failed', o)
+            return
+          }
+          notifyRunAccepted()
+          try {
+            await pollPipelineJobUntilTerminal(baseUrl, t, o.data.job_id)
+          } finally {
+            notifyRunSettled()
+          }
+        })()
       }
     }
     onSuccess()

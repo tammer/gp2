@@ -8,6 +8,7 @@ import {
   postEvaluateArticle,
   type EvaluateArticleSuccessData,
 } from '@/lib/pipeline-api'
+import { usePipelinePending } from '@/lib/pipeline-pending-context'
 import { useAuth } from '@/lib/use-auth'
 import { supabase, supabaseConfigured } from '@/lib/supabase'
 import { clearTammerImportPromptPending, isTammerImportPromptPending } from '@/lib/tammer-import-onboarding'
@@ -28,6 +29,7 @@ function formatDate(iso: string | null): string {
 export function HomePage() {
   const navigate = useNavigate()
   const { user, loading: authLoading } = useAuth()
+  const { pendingPipelineRunCount, notifyRunAccepted, notifyRunSettled } = usePipelinePending()
   const [categories, setCategories] = useState<Category[]>([])
   const [categoryId, setCategoryId] = useState<string>('')
   const [listView, setListView] = useState<ListView>('unread')
@@ -180,7 +182,11 @@ export function HomePage() {
     setRefreshBusy(true)
     setRefreshError(null)
     try {
-      const out = await pollPipelineRun(pipelineBaseUrl, token, { category: name }, ac.signal)
+      const out = await pollPipelineRun(pipelineBaseUrl, token, { category: name }, {
+        signal: ac.signal,
+        onRunAccepted: notifyRunAccepted,
+        onRunSettled: notifyRunSettled,
+      })
       if (out.kind === 'aborted') return
       if (out.kind === 'success') {
         await loadArticles()
@@ -214,7 +220,7 @@ export function HomePage() {
     } finally {
       setRefreshBusy(false)
     }
-  }, [pipelineBaseUrl, categories, categoryId, getAccessToken, loadArticles])
+  }, [pipelineBaseUrl, categories, categoryId, getAccessToken, loadArticles, notifyRunAccepted, notifyRunSettled])
 
   async function patchArticle(id: string, patch: Partial<Pick<NewsArticle, 'read' | 'saved'>>) {
     if (!supabase || !uid) return
@@ -449,6 +455,18 @@ export function HomePage() {
 
   return (
     <div className="page">
+      {pendingPipelineRunCount > 0 ? (
+        <div
+          className="pipeline-pending-banner"
+          role="status"
+          aria-live="polite"
+          aria-busy="true"
+        >
+          {pendingPipelineRunCount === 1
+            ? '1 agent has been deployed. Background updates proceeding.'
+            : `${pendingPipelineRunCount} agents have been deployed. Background updates proceeding.`}
+        </div>
+      ) : null}
       <dialog
         ref={editFilterDialogRef}
         className="modal-dialog"

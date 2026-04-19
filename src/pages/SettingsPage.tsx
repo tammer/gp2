@@ -5,6 +5,8 @@ import remarkGfm from 'remark-gfm'
 import rehypeSanitize from 'rehype-sanitize'
 import { AddSourceModal } from '@/components/AddSourceModal'
 import tammerFiltersCatalog from '@/data/tammer-filters-catalog.json'
+import { pollPipelineJobUntilTerminal } from '@/lib/pipeline-api'
+import { usePipelinePending } from '@/lib/pipeline-pending-context'
 import {
   getResolveApiBaseUrl,
   postPipelineRun,
@@ -415,6 +417,7 @@ function CategoryDetailPane({
 }
 
 export function SettingsPage() {
+  const { notifyRunAccepted, notifyRunSettled } = usePipelinePending()
   const { user, loading: authLoading } = useAuth()
   const [categories, setCategories] = useState<Category[]>([])
   const [sources, setSources] = useState<Source[]>([])
@@ -494,10 +497,21 @@ export function SettingsPage() {
       if (!afterErr && afterRows) {
         const newIds = afterRows.map((r) => r.id).filter((id) => !beforeIds.has(id))
         void Promise.all(
-          newIds.map(async (id) => {
-            const o = await postPipelineRun(base, { source: id }, token)
-            if (o.kind !== 'success') console.error('postPipelineRun failed', id, o)
-          }),
+          newIds.map((id) =>
+            (async () => {
+              const o = await postPipelineRun(base, { source: id }, token)
+              if (o.kind !== 'success') {
+                console.error('postPipelineRun failed', id, o)
+                return
+              }
+              notifyRunAccepted()
+              try {
+                await pollPipelineJobUntilTerminal(base, token, o.data.job_id)
+              } finally {
+                notifyRunSettled()
+              }
+            })(),
+          ),
         )
       }
       clearTammerImportPromptPending()
