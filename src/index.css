@@ -97,6 +97,22 @@ code {
   font-size: 0.9rem;
 }
 
+/* Full-bleed horizontally; sticky in the home scroll area. */
+.refresh-pending-banner {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  margin: 0 -1.25rem 0.85rem;
+  padding: 0.35rem 1.25rem;
+  border-bottom: 1px solid color-mix(in srgb, var(--accent) 28%, var(--border));
+  background: color-mix(in srgb, var(--accent-muted) 65%, var(--surface));
+  font-size: 0.78rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  text-align: center;
+  color: var(--text);
+}
+
 .app-header {
   display: flex;
   flex-wrap: wrap;
