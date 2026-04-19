@@ -85,6 +85,15 @@ export function ArticleCard({
         {article.full_summary ? (
           <p className="article__full-summary-body" style={{ margin: 0, whiteSpace: 'pre-wrap' }}>
             {article.full_summary}
+            {' '}
+            <a
+              href={article.url}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="article__short-summary-link"
+            >
+              full article»
+            </a>
           </p>
         ) : (
           <p className="muted" style={{ margin: 0 }}>
