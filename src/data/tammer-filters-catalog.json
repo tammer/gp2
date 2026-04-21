@@ -94,7 +94,7 @@
     },
     {
       "category": "Tech News",
-      "instruction": "- I'm not really interested in stories that focus on India.\n\n- I am not interested in stories that are promoting a podcast.\n\n- I am not interested in crypto.\n\n- I am not interested in stories about US politics and policy.",
+      "instruction": "- I am not interested in stories that are promoting a podcast.\n\n- I am not interested in crypto.\n\n- I am not interested in stories about US politics and policy.",
       "sources": [
         {
           "url": "https://betakit.com/feed/",
