@@ -433,6 +433,7 @@ export function SettingsPage() {
 
   const [tammerImportBusy, setTammerImportBusy] = useState(false)
   const [tammerImportError, setTammerImportError] = useState<string | null>(null)
+  const tammerImportInstructionsDialogRef = useRef<HTMLDialogElement>(null)
 
   const uid = user?.id
 
@@ -449,6 +450,14 @@ export function SettingsPage() {
 
   function closeAddCategoryModal() {
     addCategoryDialogRef.current?.close()
+  }
+
+  function openTammerImportInstructionsModal() {
+    tammerImportInstructionsDialogRef.current?.showModal()
+  }
+
+  function closeTammerImportInstructionsModal() {
+    tammerImportInstructionsDialogRef.current?.close()
   }
 
   async function confirmTammerImport() {
@@ -502,6 +511,7 @@ export function SettingsPage() {
           ),
         )
       }
+      openTammerImportInstructionsModal()
       void reload()
       return
     }
@@ -716,6 +726,36 @@ export function SettingsPage() {
               </button>
             </div>
           </form>
+        </div>
+      </dialog>
+
+      <dialog
+        ref={tammerImportInstructionsDialogRef}
+        className="modal-dialog"
+        aria-labelledby="tammer-import-instructions-title"
+        onClick={(e) => {
+          if (e.target === e.currentTarget) closeTammerImportInstructionsModal()
+        }}
+      >
+        <div className="modal-dialog__panel">
+          <header className="modal-dialog__header">
+            <h2 id="tammer-import-instructions-title" className="modal-dialog__title">
+              Import started
+            </h2>
+          </header>
+          <div className="tammer-import-instructions">
+            <ul className="tammer-import-instructions__list">
+              <li>Gistprism will now update from these sources every few hours.</li>
+              <li>Agents have been deployed to do an update right now.</li>
+              <li>They will be done in 30 - 60 seconds.</li>
+              <li>Return to the Articles page and start reading articles.</li>
+            </ul>
+            <div className="modal-dialog__footer">
+              <button type="button" className="btn btn--primary" onClick={closeTammerImportInstructionsModal}>
+                Got it
+              </button>
+            </div>
+          </div>
         </div>
       </dialog>
 
