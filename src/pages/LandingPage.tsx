@@ -7,7 +7,7 @@ export function LandingPage() {
       <div className="landing__glow" aria-hidden />
       <header className="landing__hero">
         <h1 className="landing__title">GistPrism</h1>
-        <p className="landing__lead">Use GistPrism to filter and summarize the internet.</p>
+        <p className="landing__lead">Filter and summarize the internet.</p>
       </header>
 
       <div className="landing__grid">
@@ -42,7 +42,7 @@ export function LandingPage() {
               If you try it you can start with my filters and you&apos;ll see how it works.&nbsp;&nbsp;You can then
               modify.
             </p>
-            <p>I like it and use it. I&apos;m keen to know if you find it useful.</p>
+            <p>I use it every day.</p>
           </div>
         </div>
 
