@@ -576,22 +576,6 @@ export function HomePage() {
               </option>
             ))}
           </select>
-          <button
-            type="button"
-            className="btn btn--secondary btn--small"
-            aria-busy={refreshBusy}
-            aria-label="Refresh articles for this category"
-            disabled={
-              catLoading ||
-              categories.length === 0 ||
-              !categoryId ||
-              refreshBusy ||
-              !pipelineBaseUrl
-            }
-            onClick={() => void handleRefresh()}
-          >
-            {refreshBusy ? 'Refreshing…' : 'Refresh'}
-          </button>
           <div className="view-toggle" role="group" aria-label="Article list view">
             {viewButtons}
           </div>
@@ -627,23 +611,61 @@ export function HomePage() {
       ) : articles.length === 0 ? (
         <div className="empty-state">
           <p>No articles in this view for the selected category.</p>
+          <div className="article-refresh">
+            <button
+              type="button"
+              className="btn btn--secondary btn--small"
+              aria-busy={refreshBusy}
+              aria-label="Refresh articles for this category"
+              disabled={
+                catLoading ||
+                categories.length === 0 ||
+                !categoryId ||
+                refreshBusy ||
+                !pipelineBaseUrl
+              }
+              onClick={() => void handleRefresh()}
+            >
+              {refreshBusy ? 'Refreshing…' : 'Refresh'}
+            </button>
+          </div>
         </div>
       ) : (
-        <ul className="article-list">
-          {articles.map((a) => (
-            <li key={a.id}>
-              <ArticleCard
-                article={a}
-                view={listView}
-                onSetRead={handleSetRead}
-                onToggleSaved={handleToggleSaved}
-                onEditFilter={openEditFilterModal}
-                busyRead={busyReadId === a.id}
-                busySaved={busySavedId === a.id}
-              />
-            </li>
-          ))}
-        </ul>
+        <>
+          <ul className="article-list">
+            {articles.map((a) => (
+              <li key={a.id}>
+                <ArticleCard
+                  article={a}
+                  view={listView}
+                  onSetRead={handleSetRead}
+                  onToggleSaved={handleToggleSaved}
+                  onEditFilter={openEditFilterModal}
+                  busyRead={busyReadId === a.id}
+                  busySaved={busySavedId === a.id}
+                />
+              </li>
+            ))}
+          </ul>
+          <div className="article-refresh">
+            <button
+              type="button"
+              className="btn btn--secondary btn--small"
+              aria-busy={refreshBusy}
+              aria-label="Refresh articles for this category"
+              disabled={
+                catLoading ||
+                categories.length === 0 ||
+                !categoryId ||
+                refreshBusy ||
+                !pipelineBaseUrl
+              }
+              onClick={() => void handleRefresh()}
+            >
+              {refreshBusy ? 'Refreshing…' : 'Refresh'}
+            </button>
+          </div>
+        </>
       )}
     </div>
   )

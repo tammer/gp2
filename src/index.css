@@ -469,6 +469,12 @@ code {
   gap: 1.5rem;
 }
 
+.article-refresh {
+  margin-top: 1.25rem;
+  display: flex;
+  justify-content: center;
+}
+
 .article {
   padding: 1.25rem;
   border: 1px solid var(--border);
