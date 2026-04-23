@@ -626,6 +626,7 @@ export function SettingsPage() {
   }
 
   const selectedCategory = useMemo(() => (selectedId ? categories.find((c) => c.id === selectedId) : undefined), [categories, selectedId])
+  const showingTammerInitState = !loading && categories.length === 0
 
   if (!supabaseConfigured) {
     return (
@@ -744,7 +745,11 @@ export function SettingsPage() {
               ))}
             </nav>
             <div className="settings-sidebar__footer">
-              <button type="button" className="btn btn--primary btn--small settings-sidebar__add-cat" onClick={openAddCategoryModal}>
+              <button
+                type="button"
+                className={`btn btn--small settings-sidebar__add-cat${showingTammerInitState ? '' : ' btn--primary'}`}
+                onClick={openAddCategoryModal}
+              >
                 Add category
               </button>
             </div>
@@ -767,9 +772,8 @@ export function SettingsPage() {
               />
             ) : (
               <div className="card settings-detail settings-detail--empty">
-                <p className="muted">
-                  No categories yet. Use <strong>Add category</strong> in the sidebar to create your own, or load
-                  Tammer&apos;s curated categories and sources to get started.
+                <p className="muted settings-empty-intro">
+                  The best way to get started is to <strong>load Tammer's curated categories and sources</strong>.
                 </p>
                 <div className="settings-empty-actions">
                   <button

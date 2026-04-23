@@ -972,6 +972,10 @@ code {
   justify-content: center;
 }
 
+.settings-empty-intro {
+  text-align: center;
+}
+
 .settings-empty-error {
   margin-top: 0.75rem;
   margin-bottom: 0;
