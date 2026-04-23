@@ -41,20 +41,6 @@
       ]
     },
     {
-      "category": "Sports",
-      "instruction": "I am only interested in NHL playoff news.",
-      "sources": [
-        {
-          "url": "https://www.nhl.com/news/",
-          "use_rss": false
-        },
-        {
-          "url": "https://www.tsn.ca/arc/outboundfeeds/sitemap-news/latest/",
-          "use_rss": true
-        }
-      ]
-    },
-    {
       "category": "Tech Blogs",
       "instruction": "1. If the article appears to be an promotion, overview of introduction to a podcast, then I am not interested.\n\n2. I am not interested in articles about San Francisco.",
       "sources": [
