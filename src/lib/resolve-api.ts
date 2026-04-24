@@ -15,11 +15,45 @@ export type ResolveSuccessData = {
   notes: string
 }
 
+/** Optional structured fields from resolve error JSON (`details`). */
+export type ResolveFailureDetails = {
+  reason?: string
+  body_preview?: string
+  stage?: string
+  status_code?: number
+  final_url?: string
+  url?: string
+  bytes_read?: number
+}
+
+function parseResolveFailureDetailsFromBody(body: Record<string, unknown>): ResolveFailureDetails | undefined {
+  const raw = body.details
+  if (!raw || typeof raw !== 'object') return undefined
+  const d = raw as Record<string, unknown>
+  const out: ResolveFailureDetails = {}
+  if (typeof d.reason === 'string') out.reason = d.reason
+  if (typeof d.body_preview === 'string') out.body_preview = d.body_preview
+  if (typeof d.stage === 'string') out.stage = d.stage
+  if (typeof d.status_code === 'number' && Number.isFinite(d.status_code)) {
+    out.status_code = d.status_code
+  } else if (typeof d.status_code === 'string' && /^\d+$/.test(d.status_code)) {
+    out.status_code = Number(d.status_code)
+  }
+  if (typeof d.final_url === 'string') out.final_url = d.final_url
+  if (typeof d.url === 'string') out.url = d.url
+  if (typeof d.bytes_read === 'number' && Number.isFinite(d.bytes_read)) {
+    out.bytes_read = d.bytes_read
+  } else if (typeof d.bytes_read === 'string' && /^\d+$/.test(d.bytes_read)) {
+    out.bytes_read = Number(d.bytes_read)
+  }
+  return Object.keys(out).length > 0 ? out : undefined
+}
+
 export type ResolveSourceOutcome =
   | { kind: 'success'; data: ResolveSuccessData }
-  | { kind: 'business_error'; error: string; message: string }
+  | { kind: 'business_error'; error: string; message: string; details?: ResolveFailureDetails }
   | { kind: 'unauthorized'; message: string }
-  | { kind: 'bad_response'; httpStatus: number; message: string }
+  | { kind: 'bad_response'; httpStatus: number; message: string; details?: ResolveFailureDetails }
   | { kind: 'network'; message: string }
 
 function readMessage(parsed: unknown): string | undefined {
@@ -67,10 +101,15 @@ export async function postResolveSource(
     }
 
     if (!res.ok) {
+      const details =
+        parsed && typeof parsed === 'object'
+          ? parseResolveFailureDetailsFromBody(parsed as Record<string, unknown>)
+          : undefined
       return {
         kind: 'bad_response',
         httpStatus: res.status,
         message: readMessage(parsed) ?? `Resolve request failed (${res.status}).`,
+        ...(details ? { details } : {}),
       }
     }
 
@@ -87,7 +126,8 @@ export async function postResolveSource(
       const error = typeof body.error === 'string' ? body.error : 'no_results'
       const message =
         typeof body.message === 'string' ? body.message : 'Could not resolve this source.'
-      return { kind: 'business_error', error, message }
+      const details = parseResolveFailureDetailsFromBody(body)
+      return { kind: 'business_error', error, message, ...(details ? { details } : {}) }
     }
 
     const resolved_url = body.resolved_url

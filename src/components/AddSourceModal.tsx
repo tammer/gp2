@@ -6,6 +6,7 @@ import {
   getResolveApiBaseUrl,
   postPipelineRun,
   postResolveSource,
+  type ResolveFailureDetails,
   type ResolveSuccessData,
 } from '@/lib/resolve-api'
 import { supabase } from '@/lib/supabase'
@@ -20,6 +21,17 @@ function isProbablyUrl(s: string): boolean {
   } catch {
     return false
   }
+}
+
+function resolveFailureContextLine(d: ResolveFailureDetails): string | null {
+  const parts: string[] = []
+  if (d.stage) parts.push(`stage: ${d.stage}`)
+  if (d.status_code !== undefined) parts.push(`HTTP ${d.status_code}`)
+  if (d.final_url && d.final_url !== d.url) parts.push(`final: ${d.final_url}`)
+  else if (d.final_url) parts.push(d.final_url)
+  else if (d.url) parts.push(d.url)
+  if (d.bytes_read !== undefined) parts.push(`${d.bytes_read} bytes`)
+  return parts.length > 0 ? parts.join(' · ') : null
 }
 
 export type AddSourceModalProps = {
@@ -54,8 +66,11 @@ export function AddSourceModal({
   const [meta, setMeta] = useState<ResolveSuccessData | null>(null)
 
   const [resolveBusy, setResolveBusy] = useState(false)
-  const [resolveError, setResolveError] = useState<string | null>(null)
-  const [unauthorized, setUnauthorized] = useState(false)
+  const [resolveFailure, setResolveFailure] = useState<{
+    message: string
+    unauthorized: boolean
+    details?: ResolveFailureDetails
+  } | null>(null)
 
   const [insertBusy, setInsertBusy] = useState(false)
   const [insertError, setInsertError] = useState<string | null>(null)
@@ -78,8 +93,7 @@ export function AddSourceModal({
     setReviewUseRss(false)
     setMeta(null)
     setResolveBusy(false)
-    setResolveError(null)
-    setUnauthorized(false)
+    setResolveFailure(null)
     setInsertBusy(false)
     setInsertError(null)
   }, [open])
@@ -94,23 +108,23 @@ export function AddSourceModal({
 
   async function onResolve(e: FormEvent) {
     e.preventDefault()
-    setResolveError(null)
-    setUnauthorized(false)
+    setResolveFailure(null)
     const q = query.trim()
     if (!q) {
-      setResolveError('Enter a URL or site name.')
+      setResolveFailure({ message: 'Enter a URL or site name.', unauthorized: false })
       return
     }
     if (!baseUrl) {
-      setResolveError(
-        'Resolve API URL is not configured (set VITE_API_BASE_URL or VITE_RESOLVE_API_BASE_URL).',
-      )
+      setResolveFailure({
+        message:
+          'Resolve API URL is not configured (set VITE_API_BASE_URL or VITE_RESOLVE_API_BASE_URL).',
+        unauthorized: false,
+      })
       return
     }
     const token = await getAccessToken()
     if (!token) {
-      setUnauthorized(true)
-      setResolveError('No session token. Sign in again.')
+      setResolveFailure({ message: 'No session token. Sign in again.', unauthorized: true })
       return
     }
     setResolveBusy(true)
@@ -129,20 +143,33 @@ export function AddSourceModal({
         setInsertError(null)
         return
       case 'unauthorized':
-        setUnauthorized(true)
-        setResolveError(outcome.message)
+        setResolveFailure({ message: outcome.message, unauthorized: true })
         return
       case 'business_error':
-        setResolveError(withResolveFailureNote(`${outcome.message} (${outcome.error})`))
+        setResolveFailure({
+          message: withResolveFailureNote(`${outcome.message} (${outcome.error})`),
+          unauthorized: false,
+          details: outcome.details,
+        })
         return
       case 'bad_response':
-        setResolveError(withResolveFailureNote(outcome.message))
+        setResolveFailure({
+          message: withResolveFailureNote(outcome.message),
+          unauthorized: false,
+          details: outcome.details,
+        })
         return
       case 'network':
-        setResolveError(withResolveFailureNote(outcome.message))
+        setResolveFailure({
+          message: withResolveFailureNote(outcome.message),
+          unauthorized: false,
+        })
         return
       default:
-        setResolveError(withResolveFailureNote('Unexpected resolve error.'))
+        setResolveFailure({
+          message: withResolveFailureNote('Unexpected resolve error.'),
+          unauthorized: false,
+        })
     }
   }
 
@@ -202,6 +229,8 @@ export function AddSourceModal({
   }
 
   const titleId = 'add-source-modal-title'
+  const resolveDetailsContext =
+    resolveFailure?.details ? resolveFailureContextLine(resolveFailure.details) : null
 
   return (
     <dialog
@@ -249,15 +278,40 @@ export function AddSourceModal({
                 autoFocus
               />
             </label>
-            {resolveError ? (
-              <p className="form-error field--full" role="alert">
-                {resolveError}{' '}
-                {unauthorized ? (
-                  <Link to="/auth" className="modal-dialog__inline-link">
-                    Sign in
-                  </Link>
+            {resolveFailure ? (
+              <div className="form-error field--full add-source-modal__resolve-error" role="alert">
+                <p className="add-source-modal__resolve-error-msg">{resolveFailure.message}</p>
+                {resolveFailure.unauthorized ? (
+                  <p className="add-source-modal__resolve-error-msg">
+                    <Link to="/auth" className="modal-dialog__inline-link">
+                      Sign in
+                    </Link>
+                  </p>
                 ) : null}
-              </p>
+                {resolveFailure.details?.reason ? (
+                  <p className="add-source-modal__resolve-reason">
+                    <span className="add-source-modal__resolve-reason-label">Reason</span>{' '}
+                    <code className="add-source-modal__resolve-reason-code">{resolveFailure.details.reason}</code>
+                  </p>
+                ) : null}
+                {resolveDetailsContext ? (
+                  <p className="muted add-source-modal__resolve-context">{resolveDetailsContext}</p>
+                ) : null}
+                {resolveFailure.details?.body_preview ? (
+                  <details className="add-source-modal__body-preview-details">
+                    <summary className="add-source-modal__body-preview-summary">
+                      Rendered homepage response (scripts blocked)
+                    </summary>
+                    <iframe
+                      className="add-source-modal__body-preview-frame"
+                      title="Homepage response as rendered HTML; scripts and forms are disabled by the browser sandbox."
+                      sandbox=""
+                      referrerPolicy="no-referrer"
+                      srcDoc={resolveFailure.details.body_preview}
+                    />
+                  </details>
+                ) : null}
+              </div>
             ) : null}
             <div className="modal-dialog__footer">
               <button type="button" className="btn btn--ghost" disabled={resolveBusy} onClick={closeModal}>

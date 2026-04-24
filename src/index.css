@@ -1325,6 +1325,66 @@ code {
   line-height: 1.45;
 }
 
+.add-source-modal__resolve-error {
+  display: grid;
+  gap: 0.45rem;
+}
+
+.add-source-modal__resolve-error-msg {
+  margin: 0;
+}
+
+.add-source-modal__resolve-reason {
+  margin: 0;
+  font-size: 0.88rem;
+}
+
+.add-source-modal__resolve-reason-label {
+  font-weight: 600;
+}
+
+.add-source-modal__resolve-reason-code {
+  font-size: 0.85em;
+  padding: 0.1em 0.35em;
+  border-radius: 0.25rem;
+  background: color-mix(in srgb, var(--danger) 12%, transparent);
+}
+
+.add-source-modal__resolve-context {
+  margin: 0;
+  font-size: 0.82rem;
+  line-height: 1.4;
+  word-break: break-word;
+}
+
+.add-source-modal__body-preview-details {
+  margin: 0.15rem 0 0;
+  color: var(--text);
+}
+
+.add-source-modal__body-preview-summary {
+  cursor: pointer;
+  font-size: 0.85rem;
+  color: var(--muted);
+  user-select: none;
+}
+
+.add-source-modal__body-preview-summary:hover {
+  color: var(--text);
+}
+
+.add-source-modal__body-preview-frame {
+  margin: 0.4rem 0 0;
+  display: block;
+  width: 100%;
+  height: 12rem;
+  max-height: min(12rem, 38vh);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: #fff;
+  color-scheme: light;
+}
+
 .app-main--landing {
   max-width: min(76rem, 100%);
   padding-left: clamp(1rem, 3vw, 2.25rem);
