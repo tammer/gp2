@@ -194,10 +194,15 @@ function CategoryDetailPane({
           </form>
         ) : (
           <>
-            <h2 id={`cat-heading-${category.id}`} className="settings-category__title">
-              {category.name}
-            </h2>
-            <div className="settings-category__header-actions">
+            <div className="settings-category__header-main">
+              <h2 id={`cat-heading-${category.id}`} className="settings-category__title">
+                {category.name}
+              </h2>
+              <p className="settings-category__meta muted">
+                {sources.length} source{sources.length === 1 ? '' : 's'}
+              </p>
+            </div>
+            <div className="settings-category__header-toolbar">
               <button type="button" className="btn btn--secondary btn--small" onClick={() => setRenaming(true)} disabled={deleteBusy}>
                 Rename
               </button>
@@ -225,21 +230,28 @@ function CategoryDetailPane({
           aria-labelledby={`instructions-heading-${category.id}`}
         >
           <div className="settings-instructions-panel__header">
-            <h3 id={`instructions-heading-${category.id}`} className="settings-instructions-panel__title">
-              Instructions
-            </h3>
+            <div className="settings-instructions-panel__intro">
+              <h3 id={`instructions-heading-${category.id}`} className="settings-instructions-panel__title">
+                Instructions
+              </h3>
+              {!instrEditing ? (
+                <p className="settings-instructions-panel__lead muted">
+                  These instructions guide which articles are included for this category.
+                </p>
+              ) : null}
+            </div>
             {!instrEditing ? (
               <div className="settings-instructions-panel__actions">
                 <button
                   type="button"
-                  className="btn btn--primary"
+                  className={`btn btn--small${hasInstruction ? ' btn--secondary' : ' btn--primary'}`}
                   disabled={deleteBusy}
                   onClick={() => {
                     setInstrSuccess(null)
                     setInstrEditing(true)
                   }}
                 >
-                  {hasInstruction ? 'Edit Instructions' : 'Add instructions'}
+                  {hasInstruction ? 'Edit instructions' : 'Add instructions'}
                 </button>
               </div>
             ) : null}
@@ -326,8 +338,8 @@ function CategoryDetailPane({
               <tbody>
                 {sources.map((s) => (
                   <tr key={s.id}>
-                    <td>
-                      <a href={s.url} target="_blank" rel="noopener noreferrer">
+                    <td className="sources-table__url">
+                      <a href={s.url} target="_blank" rel="noopener noreferrer" title={s.url}>
                         {s.url}
                       </a>
                     </td>
@@ -643,7 +655,7 @@ export function SettingsScreen({ embedded = false, titleId }: SettingsScreenProp
             </Link>
           </p>
         ) : null}
-        <h1 id={titleId} className="page-title">Settings</h1>
+        {!embedded ? <h1 id={titleId} className="page-title">Settings</h1> : null}
         <p className="muted">Configure Supabase first.</p>
       </div>
     )
@@ -677,7 +689,7 @@ export function SettingsScreen({ embedded = false, titleId }: SettingsScreenProp
           </Link>
         </p>
       ) : null}
-      <h1 id={titleId} className="page-title">Settings</h1>
+      {!embedded ? <h1 id={titleId} className="page-title">Settings</h1> : null}
 
       <dialog
         ref={addCategoryDialogRef}

@@ -37,6 +37,9 @@ export function SettingsDrawerRoute() {
         aria-labelledby="settings-dialog-title"
       >
         <header className="settings-drawer__header">
+          <h1 id="settings-dialog-title" className="settings-drawer__title">
+            Settings
+          </h1>
           <button
             ref={closeButtonRef}
             type="button"
@@ -46,7 +49,7 @@ export function SettingsDrawerRoute() {
             Close
           </button>
         </header>
-        <SettingsScreen embedded titleId="settings-dialog-title" />
+        <SettingsScreen embedded />
       </section>
     </div>
   )
