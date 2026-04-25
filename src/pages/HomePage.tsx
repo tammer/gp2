@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type FormEvent } from 'react'
-import { Navigate } from 'react-router-dom'
+import { NavLink, Navigate } from 'react-router-dom'
 import { ArticleCard } from '@/components/ArticleCard'
 import { LandingPage } from '@/pages/LandingPage'
 import {
@@ -584,6 +584,9 @@ export function HomePage() {
           <div className="view-toggle" role="group" aria-label="Article list view">
             {viewButtons}
           </div>
+          <NavLink to="/settings" className="btn btn--secondary btn--small reader-controls__settings-link">
+            Settings
+          </NavLink>
         </div>
       </section>
 

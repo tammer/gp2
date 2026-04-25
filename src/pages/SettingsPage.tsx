@@ -19,14 +19,9 @@ import type { Category, NewsArticleExclusion, Source } from '@/types/database'
 
 type ExclusionRow = Pick<NewsArticleExclusion, 'category_id' | 'url' | 'why' | 'excluded_at'>
 
-function SettingsBackToHomeLink() {
-  return (
-    <p className="page-back">
-      <Link to="/" className="page-back__link">
-        ← Back to Articles
-      </Link>
-    </p>
-  )
+type SettingsScreenProps = {
+  embedded?: boolean
+  titleId?: string
 }
 
 function CategoryDetailPane({
@@ -415,7 +410,7 @@ function CategoryDetailPane({
   )
 }
 
-export function SettingsPage() {
+export function SettingsScreen({ embedded = false, titleId }: SettingsScreenProps) {
   const { notifyRunAccepted, notifyRunSettled } = usePipelinePending()
   const { user, loading: authLoading } = useAuth()
   const [categories, setCategories] = useState<Category[]>([])
@@ -641,8 +636,14 @@ export function SettingsPage() {
   if (!supabaseConfigured) {
     return (
       <div className="page page--narrow">
-        <SettingsBackToHomeLink />
-        <h1 className="page-title">Settings</h1>
+        {!embedded ? (
+          <p className="page-back">
+            <Link to="/" className="page-back__link">
+              ← Back to Articles
+            </Link>
+          </p>
+        ) : null}
+        <h1 id={titleId} className="page-title">Settings</h1>
         <p className="muted">Configure Supabase first.</p>
       </div>
     )
@@ -651,7 +652,13 @@ export function SettingsPage() {
   if (authLoading) {
     return (
       <div className="page">
-        <SettingsBackToHomeLink />
+        {!embedded ? (
+          <p className="page-back">
+            <Link to="/" className="page-back__link">
+              ← Back to Articles
+            </Link>
+          </p>
+        ) : null}
         <p className="muted">Loading…</p>
       </div>
     )
@@ -662,9 +669,15 @@ export function SettingsPage() {
   }
 
   return (
-    <div className="page page--settings">
-      <SettingsBackToHomeLink />
-      <h1 className="page-title">Settings</h1>
+    <div className={`page page--settings${embedded ? ' page--settings--drawer' : ''}`}>
+      {!embedded ? (
+        <p className="page-back">
+          <Link to="/" className="page-back__link">
+            ← Back to Articles
+          </Link>
+        </p>
+      ) : null}
+      <h1 id={titleId} className="page-title">Settings</h1>
 
       <dialog
         ref={addCategoryDialogRef}
@@ -837,4 +850,8 @@ export function SettingsPage() {
       )}
     </div>
   )
+}
+
+export function SettingsPage() {
+  return <SettingsScreen />
 }
