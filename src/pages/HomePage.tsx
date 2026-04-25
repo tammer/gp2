@@ -618,7 +618,7 @@ export function HomePage() {
         </p>
       ) : articles.length === 0 ? (
         <div className="empty-state">
-          <p>No articles in this view for the selected category.</p>
+          <p>No articles to show. Update bots run every few hours. You can send them out now if you want to.</p>
           <div className="article-refresh">
             <button
               type="button"
@@ -634,7 +634,7 @@ export function HomePage() {
               }
               onClick={() => void handleRefresh()}
             >
-              {refreshBusy ? 'Refreshing…' : 'Refresh'}
+              {refreshBusy ? 'Waiting for update…' : 'Send them out now'}
             </button>
           </div>
         </div>
