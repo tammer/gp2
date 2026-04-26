@@ -1735,6 +1735,10 @@ code {
   justify-content: space-between;
 }
 
+.onboarding-wizard__actions--center {
+  justify-content: center;
+}
+
 .onboarding-wizard__pipeline-wait {
   display: flex;
   flex-direction: column;

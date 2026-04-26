@@ -417,7 +417,7 @@ export function OnboardingPage() {
                     </div>
                     <p className="muted onboarding-wizard__pipeline-status">
                       {pipelinePollStatus === 'running'
-                        ? 'Fetching and analyzing articles…'
+                        ? 'Working…'
                         : pipelinePollStatus === 'queued'
                           ? 'Job queued…'
                           : 'Starting…'}
@@ -451,12 +451,9 @@ export function OnboardingPage() {
           <div className="onboarding-wizard__step">
             <h2 className="onboarding-wizard__step-title">Success</h2>
             <p>You have successfully added your first category, filter instructions, and source.</p>
-            <p>You can add more categories and sources in settings.</p>
-            <p>GistPrism updates your article gists automatically every few hours. (It&apos;s not meant for doom scrolling.)</p>
-            <div className="form-actions onboarding-wizard__actions">
-              <Link to="/settings" className="btn btn--ghost">
-                Review in settings
-              </Link>
+            <p>You can add more categories and sources in settings OR use the <strong>"Add Sources"</strong> button to add sources from a catalog.</p>
+            <p>GistPrism updates your article gists automatically every few hours. (When you've read everthing, you're done. No doom scrolling!)</p>
+            <div className="form-actions onboarding-wizard__actions onboarding-wizard__actions--center">
               <Link to="/" className="btn btn--primary">
                 Go to articles
               </Link>
