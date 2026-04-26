@@ -1735,6 +1735,55 @@ code {
   justify-content: space-between;
 }
 
+.onboarding-wizard__pipeline-wait {
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+  padding: 0.75rem 0.85rem;
+  border-radius: var(--radius);
+  border: 1px solid var(--border);
+  background: color-mix(in srgb, var(--surface) 92%, var(--accent-muted));
+}
+
+.onboarding-wizard__pipeline-wait-text {
+  margin: 0;
+  font-size: 0.95rem;
+  line-height: 1.45;
+}
+
+.onboarding-wizard__pipeline-status {
+  margin: 0;
+  font-size: 0.9rem;
+}
+
+.onboarding-wizard__progress-track {
+  position: relative;
+  height: 5px;
+  border-radius: 999px;
+  background: var(--border);
+  overflow: hidden;
+}
+
+.onboarding-wizard__progress-bar {
+  position: absolute;
+  left: 0;
+  top: 0;
+  height: 100%;
+  width: 38%;
+  border-radius: 999px;
+  background: var(--accent);
+  animation: onboarding-wizard-progress-slide 1.35s ease-in-out infinite;
+}
+
+@keyframes onboarding-wizard-progress-slide {
+  0% {
+    transform: translateX(-100%);
+  }
+  100% {
+    transform: translateX(320%);
+  }
+}
+
 .add-sources-catalog {
   max-width: min(56rem, 92vw);
 }

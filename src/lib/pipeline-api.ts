@@ -237,6 +237,8 @@ export type PollPipelineRunOptions = {
   signal?: AbortSignal
   onRunAccepted?: () => void
   onRunSettled?: () => void
+  /** Called after each poll while the job is still `queued` or `running` (before the wait backoff). */
+  onWaitingPoll?: (status: Extract<PipelineJobStatus, 'queued' | 'running'>) => void
 }
 
 function isAbortError(e: unknown): boolean {
@@ -497,6 +499,7 @@ export async function pollPipelineJobUntilTerminal(
   accessToken: string,
   jobId: string,
   signal?: AbortSignal,
+  onWaitingPoll?: (status: Extract<PipelineJobStatus, 'queued' | 'running'>) => void,
 ): Promise<PollPipelineRunOutcome> {
   let waitMs = POLL_INITIAL_MS
   for (;;) {
@@ -522,6 +525,8 @@ export async function pollPipelineJobUntilTerminal(
         error: typeof error === 'string' && error.trim() ? error : 'Pipeline run failed.',
       }
     }
+
+    onWaitingPoll?.(status)
 
     try {
       await delay(waitMs, signal)
@@ -555,7 +560,7 @@ export async function pollPipelineRun(
 
   options?.onRunAccepted?.()
   try {
-    return await pollPipelineJobUntilTerminal(baseUrl, accessToken, start.jobId, signal)
+    return await pollPipelineJobUntilTerminal(baseUrl, accessToken, start.jobId, signal, options?.onWaitingPoll)
   } finally {
     options?.onRunSettled?.()
   }

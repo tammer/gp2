@@ -39,6 +39,9 @@ export function OnboardingPage() {
   const [sourceQuery, setSourceQuery] = useState(DEFAULT_SOURCE_QUERY)
 
   const [busy, setBusy] = useState(false)
+  /** While adding a source on step 4: saving row vs waiting on first pipeline job (long). */
+  const [sourceAddPhase, setSourceAddPhase] = useState<'idle' | 'saving' | 'pipeline'>('idle')
+  const [pipelinePollStatus, setPipelinePollStatus] = useState<'queued' | 'running' | null>(null)
   const [error, setError] = useState<string | null>(null)
 
   const [resolvedMeta, setResolvedMeta] = useState<ResolveSuccessData | null>(null)
@@ -174,6 +177,8 @@ export function OnboardingPage() {
     }
     setBusy(true)
     setError(null)
+    setSourceAddPhase('saving')
+    setPipelinePollStatus(null)
     const { data: inserted, error: insertErr } = await supabase
       .from('sources')
       .insert({
@@ -186,6 +191,7 @@ export function OnboardingPage() {
       .single()
     if (insertErr) {
       setBusy(false)
+      setSourceAddPhase('idle')
       setError(insertErr.message)
       return
     }
@@ -199,9 +205,13 @@ export function OnboardingPage() {
       if (token) {
         const run = await postPipelineRun(resolveBaseUrl, { source: sourceId }, token)
         if (run.kind === 'success') {
+          setSourceAddPhase('pipeline')
+          setPipelinePollStatus(null)
           notifyRunAccepted()
           try {
-            await pollPipelineJobUntilTerminal(resolveBaseUrl, token, run.data.job_id)
+            await pollPipelineJobUntilTerminal(resolveBaseUrl, token, run.data.job_id, undefined, (status) => {
+              setPipelinePollStatus(status)
+            })
           } finally {
             notifyRunSettled()
           }
@@ -209,6 +219,8 @@ export function OnboardingPage() {
       }
     }
     setBusy(false)
+    setSourceAddPhase('idle')
+    setPipelinePollStatus(null)
     setStep(5)
   }
 
@@ -382,6 +394,36 @@ export function OnboardingPage() {
                   />
                   <span>Use RSS</span>
                 </label>
+                {busy && sourceAddPhase === 'pipeline' ? (
+                  <div className="onboarding-wizard__pipeline-wait" role="status" aria-live="polite">
+                    <p className="muted onboarding-wizard__pipeline-wait-text">
+                      Your source is saved. Now fetching and processing articles. This takes
+                      <strong>10–15 seconds</strong>.
+                    </p>
+                    <div
+                      className="onboarding-wizard__progress-track"
+                      role="progressbar"
+                      aria-busy="true"
+                      aria-label="First article import in progress"
+                      aria-valuetext={
+                        pipelinePollStatus === 'running'
+                          ? 'Fetching and analyzing articles'
+                          : pipelinePollStatus === 'queued'
+                            ? 'Job queued'
+                            : 'Starting import'
+                      }
+                    >
+                      <div className="onboarding-wizard__progress-bar" />
+                    </div>
+                    <p className="muted onboarding-wizard__pipeline-status">
+                      {pipelinePollStatus === 'running'
+                        ? 'Fetching and analyzing articles…'
+                        : pipelinePollStatus === 'queued'
+                          ? 'Job queued…'
+                          : 'Starting…'}
+                    </p>
+                  </div>
+                ) : null}
                 <div className="form-actions onboarding-wizard__actions">
                   <button
                     type="button"
@@ -397,7 +439,7 @@ export function OnboardingPage() {
                     Back
                   </button>
                   <button type="submit" className="btn btn--primary" disabled={busy || !reviewUrl.trim()}>
-                    {busy ? 'Adding…' : 'Add source'}
+                    {busy ? (sourceAddPhase === 'pipeline' ? 'Fetching articles…' : 'Saving…') : 'Add source'}
                   </button>
                 </div>
               </form>
