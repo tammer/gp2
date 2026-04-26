@@ -1734,3 +1734,104 @@ code {
 .onboarding-wizard__actions {
   justify-content: space-between;
 }
+
+.add-sources-catalog {
+  max-width: min(56rem, 92vw);
+}
+
+.add-sources-catalog__intro {
+  margin-top: 0;
+}
+
+.add-sources-catalog__added-toast {
+  margin: 0 0 0.75rem;
+  padding: 0.55rem 0.75rem;
+  border-radius: var(--radius);
+  border: 1px solid color-mix(in srgb, var(--success) 45%, var(--border));
+  background: color-mix(in srgb, var(--success) 14%, var(--surface));
+  color: var(--text);
+  font-size: 0.95rem;
+  line-height: 1.45;
+}
+
+.add-sources-catalog__list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  max-height: min(60vh, 36rem);
+  overflow: auto;
+  padding-right: 0.2rem;
+}
+
+.add-sources-catalog__row {
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 0.75rem;
+  background: color-mix(in srgb, var(--surface) 82%, transparent);
+}
+
+.add-sources-catalog__source-row {
+  min-width: 0;
+}
+
+.add-sources-catalog__source-link {
+  display: inline;
+  font-size: 1.06rem;
+  font-weight: 600;
+  line-height: 1.5;
+  color: var(--text);
+  text-decoration: underline;
+  text-decoration-thickness: 0.08em;
+  text-decoration-color: color-mix(in srgb, var(--text) 35%, var(--muted) 65%);
+  text-underline-offset: 0.14em;
+  word-break: break-all;
+}
+
+.add-sources-catalog__source-link:hover {
+  color: var(--accent);
+  text-decoration-color: color-mix(in srgb, var(--accent) 45%, transparent);
+}
+
+.add-sources-catalog__category-row {
+  margin: 0;
+  display: flex;
+  flex-direction: row;
+  flex-wrap: nowrap;
+  align-items: center;
+  gap: 0.5rem;
+  min-width: 0;
+}
+
+.add-sources-catalog__category-label {
+  flex-shrink: 0;
+  margin: 0;
+  white-space: nowrap;
+}
+
+.add-sources-catalog__category-input {
+  flex: 1 1 auto;
+  min-width: 0;
+  width: auto;
+}
+
+.add-sources-catalog__action-row {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 0.35rem;
+}
+
+.add-sources-catalog__action-row-btn-wrap {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.add-sources-catalog__row-note {
+  margin: 0;
+  font-size: 0.88rem;
+  line-height: 1.4;
+  max-width: 100%;
+}

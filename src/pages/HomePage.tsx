@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type FormEvent } from 'react'
 import { NavLink, Navigate } from 'react-router-dom'
+import { AddSourcesFromCatalogModal } from '@/components/AddSourcesFromCatalogModal'
 import { ArticleCard } from '@/components/ArticleCard'
 import { LandingPage } from '@/pages/LandingPage'
 import {
@@ -54,6 +55,7 @@ export function HomePage() {
 
   const [refreshBusy, setRefreshBusy] = useState(false)
   const [refreshError, setRefreshError] = useState<string | null>(null)
+  const [addSourcesOpen, setAddSourcesOpen] = useState(false)
   const refreshAbortRef = useRef<AbortController | null>(null)
 
   const uid = user?.id
@@ -564,6 +566,13 @@ export function HomePage() {
           </form>
         </div>
       </dialog>
+      <AddSourcesFromCatalogModal
+        open={addSourcesOpen}
+        onClose={() => setAddSourcesOpen(false)}
+        userId={user.id}
+        getAccessToken={getAccessToken}
+        onCategoriesChanged={() => void loadCategories()}
+      />
 
       <section className="reader-controls" aria-label="Filters">
         <div className="reader-controls__row">
@@ -584,6 +593,9 @@ export function HomePage() {
           <div className="view-toggle" role="group" aria-label="Article list view">
             {viewButtons}
           </div>
+          <button type="button" className="btn btn--secondary btn--small" onClick={() => setAddSourcesOpen(true)}>
+            Suggested Sources
+          </button>
           <NavLink to="/settings" className="btn btn--secondary btn--small reader-controls__settings-link">
             Settings
           </NavLink>
