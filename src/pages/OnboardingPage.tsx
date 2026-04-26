@@ -397,7 +397,7 @@ export function OnboardingPage() {
                 {busy && sourceAddPhase === 'pipeline' ? (
                   <div className="onboarding-wizard__pipeline-wait" role="status" aria-live="polite">
                     <p className="muted onboarding-wizard__pipeline-wait-text">
-                      Your source is saved. Now fetching and processing articles. This takes
+                      Your source is saved. Now fetching and processing articles. This takes&nbsp;
                       <strong>10–15 seconds</strong>.
                     </p>
                     <div

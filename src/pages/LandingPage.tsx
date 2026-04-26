@@ -28,21 +28,14 @@ export function LandingPage() {
             </h2>
             <ul className="landing__list">
               <li>filters all content per your specs</li>
-              <li>organizes and summarizes the content (because it is never as concise as it should be.)</li>
+              <li>organizes and summarizes the content.</li>
             </ul>
           </section>
 
           <div className="landing__story">
-            <p>I like it becaues the knowlege I gain per minute consuming content is substantially increased.</p>
             <p>
-              I use it to consume about 20 substacks, cbc news, hacker news (heavily filtered) and tech crunch (somewaht
-              filtered)
+              I use it to consume about 20 substacks, cbc news, hacker news and tech crunch.
             </p>
-            <p>
-              If you try it you can start with my filters and you&apos;ll see how it works.&nbsp;&nbsp;You can then
-              modify.
-            </p>
-            <p>I use it every day.</p>
           </div>
         </div>
 
