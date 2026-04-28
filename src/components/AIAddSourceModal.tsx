@@ -6,6 +6,7 @@ import {
   getResolveApiBaseUrl,
   getSourcesDiscoverStatus,
   postPipelineRun,
+  postResolveSource,
   postSourcesDiscover,
   type DiscoverSuggestion,
 } from '@/lib/resolve-api'
@@ -27,6 +28,7 @@ export type AIAddSourceModalProps = {
 }
 
 type Step = 'prompt' | 'discovering' | 'results'
+const NEW_CATEGORY_VALUE = '__new__'
 
 function delay(ms: number): Promise<void> {
   return new Promise((resolve) => window.setTimeout(resolve, ms))
@@ -49,9 +51,12 @@ export function AIAddSourceModal({
   const [discoverStatus, setDiscoverStatus] = useState<'queued' | 'running'>('queued')
   const [suggestions, setSuggestions] = useState<DiscoverSuggestion[]>([])
   const [error, setError] = useState<string | null>(null)
+  const [success, setSuccess] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
   const [addingUrl, setAddingUrl] = useState<string | null>(null)
+  const [activeAddUrl, setActiveAddUrl] = useState<string | null>(null)
   const [selectedCategoryByUrl, setSelectedCategoryByUrl] = useState<Record<string, string>>({})
+  const [newCategoryNameByUrl, setNewCategoryNameByUrl] = useState<Record<string, string>>({})
 
   const baseUrl = getResolveApiBaseUrl()
 
@@ -73,9 +78,12 @@ export function AIAddSourceModal({
     setDiscoverStatus('queued')
     setSuggestions([])
     setError(null)
+    setSuccess(null)
     setBusy(false)
     setAddingUrl(null)
+    setActiveAddUrl(null)
     setSelectedCategoryByUrl({})
+    setNewCategoryNameByUrl({})
   }, [open])
 
   function closeModal() {
@@ -155,20 +163,61 @@ export function AIAddSourceModal({
       setError('Resolve API URL is not configured (set VITE_API_BASE_URL or VITE_RESOLVE_API_BASE_URL).')
       return
     }
-    const categoryId = selectedCategoryByUrl[s.index] ?? defaultCategoryId ?? categories[0]?.id ?? ''
-    if (!categoryId) {
+    const selectedCategory = selectedCategoryByUrl[s.url] ?? defaultCategoryId ?? categories[0]?.id ?? ''
+    if (!selectedCategory) {
       setError('Create a category first, then add sources.')
       return
     }
+    let categoryId = selectedCategory
+    if (selectedCategory === NEW_CATEGORY_VALUE) {
+      const categoryName = (newCategoryNameByUrl[s.url] ?? '').trim()
+      if (!categoryName) {
+        setError('Enter a name for the new category.')
+        return
+      }
+      const { data: categoryRow, error: categoryErr } = await supabase
+        .from('categories')
+        .insert({
+          user_id: userId,
+          name: categoryName,
+          instruction: '',
+        })
+        .select('id')
+        .single()
+      if (categoryErr) {
+        setError(categoryErr.message)
+        return
+      }
+      categoryId =
+        categoryRow && typeof categoryRow === 'object' && 'id' in categoryRow && typeof categoryRow.id === 'string'
+          ? categoryRow.id
+          : ''
+      if (!categoryId) {
+        setError('Category was created but no id was returned.')
+        return
+      }
+    }
+    const token = await getAccessToken()
+    if (!token) {
+      setError('No session token. Sign in again.')
+      return
+    }
     setError(null)
-    setAddingUrl(s.index)
+    setSuccess(null)
+    setAddingUrl(s.url)
+    const resolved = await postResolveSource(baseUrl, s.url, token)
+    if (resolved.kind !== 'success') {
+      setAddingUrl(null)
+      setError(resolved.message)
+      return
+    }
     const { data: inserted, error: insertErr } = await supabase
       .from('sources')
       .insert({
         user_id: userId,
         category_id: categoryId,
-        url: s.index,
-        use_rss: s.index_is_rss,
+        url: resolved.data.resolved_url,
+        use_rss: resolved.data.use_rss,
       })
       .select('id')
       .single()
@@ -182,22 +231,20 @@ export function AIAddSourceModal({
         ? inserted.id
         : ''
     if (newId && baseUrl) {
-      const t = await getAccessToken()
-      if (t) {
-        const o = await postPipelineRun(baseUrl, { source: newId }, t)
-        if (o.kind === 'success') {
-          notifyRunAccepted()
-          try {
-            await pollPipelineJobUntilTerminal(baseUrl, t, o.data.job_id)
-          } finally {
-            notifyRunSettled()
-          }
+      const o = await postPipelineRun(baseUrl, { source: newId }, token)
+      if (o.kind === 'success') {
+        notifyRunAccepted()
+        try {
+          await pollPipelineJobUntilTerminal(baseUrl, token, o.data.job_id)
+        } finally {
+          notifyRunSettled()
         }
       }
     }
     setAddingUrl(null)
+    setActiveAddUrl(null)
     onSuccess()
-    closeModal()
+    setSuccess(`Added ${s.name || s.url}. You can add another suggestion.`)
   }
 
   const titleId = 'ai-add-source-modal-title'
@@ -298,52 +345,104 @@ export function AIAddSourceModal({
                 {error}
               </p>
             ) : null}
+            {success ? (
+              <p className="form-success" role="status">
+                {success}
+              </p>
+            ) : null}
             <ul className="ai-discover-results__list">
               {suggestions.map((s) => {
-                const selected = selectedCategoryByUrl[s.index] ?? defaultCategoryId ?? categories[0]?.id ?? ''
-                const isAdding = addingUrl === s.index
+                const selected = selectedCategoryByUrl[s.url] ?? defaultCategoryId ?? categories[0]?.id ?? ''
+                const isAdding = addingUrl === s.url
+                const isChoosingCategory = activeAddUrl === s.url
                 return (
-                  <li key={`${s.url}::${s.index}`} className="ai-discover-result-card">
+                  <li key={s.url} className="ai-discover-result-card">
                     <h3 className="ai-discover-result-card__title">{s.name || s.url}</h3>
                     <p className="ai-discover-result-card__url">
                       <a href={s.url} target="_blank" rel="noopener noreferrer">
                         {s.url}
                       </a>
                     </p>
-                    <p className="ai-discover-result-card__why">
-                      <strong>Will ingest:</strong> {s.index} ({s.index_is_rss ? 'RSS/XML' : 'HTML/auto'})
-                    </p>
                     {s.why ? <p className="ai-discover-result-card__why">{s.why}</p> : null}
-                    <div className="ai-discover-result-card__actions">
-                      <label className="field">
-                        <span className="field__label">Category</span>
-                        <select
-                          className="input"
-                          value={selected}
-                          onChange={(e) =>
+                    {isChoosingCategory ? (
+                      <div className="ai-discover-result-card__actions">
+                        <label className="field">
+                          <span className="field__label">Category</span>
+                          <select
+                            className="input"
+                            value={selected}
+                            onChange={(e) =>
+                              setSelectedCategoryByUrl((prev) => ({
+                                ...prev,
+                                [s.url]: e.target.value,
+                              }))
+                            }
+                            disabled={isAdding || noCategories}
+                          >
+                            <option value={NEW_CATEGORY_VALUE}>+ Create new category</option>
+                            {categories.map((c) => (
+                              <option key={c.id} value={c.id}>
+                                {c.name}
+                              </option>
+                            ))}
+                          </select>
+                        </label>
+                        {selected === NEW_CATEGORY_VALUE ? (
+                          <label className="field">
+                            <span className="field__label">New category name</span>
+                            <input
+                              className="input"
+                              value={newCategoryNameByUrl[s.url] ?? ''}
+                              onChange={(e) =>
+                                setNewCategoryNameByUrl((prev) => ({
+                                  ...prev,
+                                  [s.url]: e.target.value,
+                                }))
+                              }
+                              disabled={isAdding}
+                              placeholder="e.g. AI Policy"
+                            />
+                          </label>
+                        ) : null}
+                        <div className="modal-dialog__footer-right">
+                          <button
+                            type="button"
+                            className="btn btn--ghost btn--small"
+                            disabled={isAdding}
+                            onClick={() => setActiveAddUrl(null)}
+                          >
+                            Cancel
+                          </button>
+                          <button
+                            type="button"
+                            className="btn btn--primary btn--small"
+                            disabled={isAdding || noCategories}
+                            onClick={() => void onAddSuggestion(s)}
+                          >
+                            {isAdding ? 'Resolving and adding…' : 'Resolve and add'}
+                          </button>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="ai-discover-result-card__actions">
+                        <button
+                          type="button"
+                          className="btn btn--primary btn--small"
+                          disabled={Boolean(addingUrl) || noCategories}
+                          onClick={() => {
+                            setError(null)
+                            setSuccess(null)
                             setSelectedCategoryByUrl((prev) => ({
                               ...prev,
-                              [s.index]: e.target.value,
+                              [s.url]: prev[s.url] ?? defaultCategoryId ?? categories[0]?.id ?? NEW_CATEGORY_VALUE,
                             }))
-                          }
-                          disabled={isAdding || noCategories}
+                            setActiveAddUrl(s.url)
+                          }}
                         >
-                          {categories.map((c) => (
-                            <option key={c.id} value={c.id}>
-                              {c.name}
-                            </option>
-                          ))}
-                        </select>
-                      </label>
-                      <button
-                        type="button"
-                        className="btn btn--primary btn--small"
-                        disabled={isAdding || noCategories}
-                        onClick={() => void onAddSuggestion(s)}
-                      >
-                        {isAdding ? 'Adding…' : 'Add'}
-                      </button>
-                    </div>
+                          Add
+                        </button>
+                      </div>
+                    )}
                   </li>
                 )
               })}

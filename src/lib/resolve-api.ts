@@ -162,8 +162,8 @@ export async function postResolveSource(
 export type DiscoverSuggestion = {
   name: string
   url: string
-  index: string
-  index_is_rss: boolean
+  index?: string
+  index_is_rss?: boolean
   why: string
 }
 
@@ -297,8 +297,8 @@ function parseDiscoverSuggestions(parsed: unknown): DiscoverSuggestion[] {
       return {
         name: typeof r.name === 'string' ? r.name : r.url,
         url: r.url,
-        index,
-        index_is_rss: typeof r.index_is_rss === 'boolean' ? r.index_is_rss : false,
+        ...(index !== r.url ? { index } : {}),
+        ...(typeof r.index_is_rss === 'boolean' ? { index_is_rss: r.index_is_rss } : {}),
         why: typeof r.why === 'string' ? r.why : '',
       }
     })
