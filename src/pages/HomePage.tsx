@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type FormEvent } from 'react'
 import { NavLink, Navigate } from 'react-router-dom'
+import { AIAddSourceModal } from '@/components/AIAddSourceModal'
 import { AddSourcesFromCatalogModal } from '@/components/AddSourcesFromCatalogModal'
 import { ArticleCard } from '@/components/ArticleCard'
 import { LandingPage } from '@/pages/LandingPage'
@@ -56,6 +57,7 @@ export function HomePage() {
   const [refreshBusy, setRefreshBusy] = useState(false)
   const [refreshError, setRefreshError] = useState<string | null>(null)
   const [addSourcesOpen, setAddSourcesOpen] = useState(false)
+  const [addSourceAiOpen, setAddSourceAiOpen] = useState(false)
   const refreshAbortRef = useRef<AbortController | null>(null)
 
   const uid = user?.id
@@ -573,6 +575,18 @@ export function HomePage() {
         getAccessToken={getAccessToken}
         onCategoriesChanged={() => void loadCategories()}
       />
+      <AIAddSourceModal
+        open={addSourceAiOpen}
+        onClose={() => setAddSourceAiOpen(false)}
+        userId={user.id}
+        categories={categories.map((c) => ({ id: c.id, name: c.name }))}
+        defaultCategoryId={categoryId || null}
+        getAccessToken={getAccessToken}
+        onSuccess={() => {
+          void loadCategories()
+          void loadArticles()
+        }}
+      />
 
       <section className="reader-controls" aria-label="Filters">
         <div className="reader-controls__row">
@@ -595,6 +609,9 @@ export function HomePage() {
           </div>
           <button type="button" className="btn btn--secondary btn--small" onClick={() => setAddSourcesOpen(true)}>
             Suggested Sources
+          </button>
+          <button type="button" className="btn btn--secondary btn--small" onClick={() => setAddSourceAiOpen(true)}>
+            AI
           </button>
           <NavLink to="/settings" className="btn btn--secondary btn--small reader-controls__settings-link">
             Settings

@@ -159,6 +159,242 @@ export async function postResolveSource(
   }
 }
 
+export type DiscoverSuggestion = {
+  name: string
+  url: string
+  index: string
+  index_is_rss: boolean
+  why: string
+}
+
+export type DiscoverStartAccepted = {
+  job_id: string
+  status: string
+}
+
+export type DiscoverStartOutcome =
+  | { kind: 'success'; data: DiscoverStartAccepted }
+  | { kind: 'business_error'; error: string; message: string }
+  | { kind: 'unauthorized'; message: string }
+  | { kind: 'bad_response'; httpStatus: number; message: string }
+  | { kind: 'network'; message: string }
+
+export async function postSourcesDiscover(
+  baseUrl: string,
+  query: string,
+  accessToken: string,
+  maxResults = 5,
+): Promise<DiscoverStartOutcome> {
+  const root = baseUrl.replace(/\/$/, '')
+  const url = `${root}/api/sources/discover`
+  try {
+    const res = await fetch(url, {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ query: query.trim(), max_results: maxResults }),
+    })
+    const text = await res.text()
+    let parsed: unknown
+    try {
+      parsed = text ? JSON.parse(text) : null
+    } catch {
+      return {
+        kind: 'bad_response',
+        httpStatus: res.status,
+        message: 'Resolve server returned invalid JSON.',
+      }
+    }
+
+    if (res.status === 401) {
+      return {
+        kind: 'unauthorized',
+        message: readMessage(parsed) ?? 'Session expired or not authorized. Sign in again and retry.',
+      }
+    }
+
+    if (res.status === 202) {
+      if (!parsed || typeof parsed !== 'object') {
+        return {
+          kind: 'bad_response',
+          httpStatus: res.status,
+          message: 'Empty response from resolve server.',
+        }
+      }
+      const body = parsed as Record<string, unknown>
+      if (body.ok !== true) {
+        const error = typeof body.error === 'string' ? body.error : 'no_results'
+        const message = typeof body.message === 'string' ? body.message : 'Discover request was rejected.'
+        return { kind: 'business_error', error, message }
+      }
+      const job_id = body.job_id
+      const status = body.status
+      if (typeof job_id !== 'string' || typeof status !== 'string') {
+        return {
+          kind: 'bad_response',
+          httpStatus: res.status,
+          message: 'Discover response missing job_id or status.',
+        }
+      }
+      return { kind: 'success', data: { job_id, status } }
+    }
+
+    if (!res.ok) {
+      const body = parsed && typeof parsed === 'object' ? (parsed as Record<string, unknown>) : null
+      if (body && body.ok === false) {
+        const error = typeof body.error === 'string' ? body.error : 'no_results'
+        const message = typeof body.message === 'string' ? body.message : `Discover request failed (${res.status}).`
+        return { kind: 'business_error', error, message }
+      }
+      return {
+        kind: 'bad_response',
+        httpStatus: res.status,
+        message: readMessage(parsed) ?? `Discover request failed (${res.status}).`,
+      }
+    }
+
+    return {
+      kind: 'bad_response',
+      httpStatus: res.status,
+      message: readMessage(parsed) ?? `Unexpected status ${res.status} for discover request.`,
+    }
+  } catch (e) {
+    return {
+      kind: 'network',
+      message: e instanceof Error ? e.message : 'Network error while contacting resolve server.',
+    }
+  }
+}
+
+export type DiscoverStatusData = {
+  job_id: string
+  status: 'queued' | 'running' | 'succeeded' | 'failed'
+  suggestions: DiscoverSuggestion[]
+  error: string | null
+}
+
+export type DiscoverStatusOutcome =
+  | { kind: 'success'; data: DiscoverStatusData }
+  | { kind: 'business_error'; error: string; message: string }
+  | { kind: 'unauthorized'; message: string }
+  | { kind: 'bad_response'; httpStatus: number; message: string }
+  | { kind: 'network'; message: string }
+
+function parseDiscoverSuggestions(parsed: unknown): DiscoverSuggestion[] {
+  if (!parsed || typeof parsed !== 'object') return []
+  const obj = parsed as Record<string, unknown>
+  if (!obj.result || typeof obj.result !== 'object') return []
+  const result = obj.result as Record<string, unknown>
+  if (!Array.isArray(result.suggestions)) return []
+  return result.suggestions
+    .map((item) => {
+      if (!item || typeof item !== 'object') return null
+      const r = item as Record<string, unknown>
+      if (typeof r.url !== 'string') return null
+      const index = typeof r.index === 'string' && r.index.trim() ? r.index : r.url
+      return {
+        name: typeof r.name === 'string' ? r.name : r.url,
+        url: r.url,
+        index,
+        index_is_rss: typeof r.index_is_rss === 'boolean' ? r.index_is_rss : false,
+        why: typeof r.why === 'string' ? r.why : '',
+      }
+    })
+    .filter((s): s is DiscoverSuggestion => Boolean(s))
+}
+
+export async function getSourcesDiscoverStatus(
+  baseUrl: string,
+  jobId: string,
+  accessToken: string,
+): Promise<DiscoverStatusOutcome> {
+  const root = baseUrl.replace(/\/$/, '')
+  const url = `${root}/api/sources/discover/${encodeURIComponent(jobId)}`
+  try {
+    const res = await fetch(url, {
+      method: 'GET',
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+      },
+    })
+    const text = await res.text()
+    let parsed: unknown
+    try {
+      parsed = text ? JSON.parse(text) : null
+    } catch {
+      return {
+        kind: 'bad_response',
+        httpStatus: res.status,
+        message: 'Resolve server returned invalid JSON.',
+      }
+    }
+
+    if (res.status === 401) {
+      return {
+        kind: 'unauthorized',
+        message: readMessage(parsed) ?? 'Session expired or not authorized. Sign in again and retry.',
+      }
+    }
+
+    if (!res.ok) {
+      const body = parsed && typeof parsed === 'object' ? (parsed as Record<string, unknown>) : null
+      if (body && body.ok === false) {
+        const error = typeof body.error === 'string' ? body.error : 'no_results'
+        const message = typeof body.message === 'string' ? body.message : `Discover status failed (${res.status}).`
+        return { kind: 'business_error', error, message }
+      }
+      return {
+        kind: 'bad_response',
+        httpStatus: res.status,
+        message: readMessage(parsed) ?? `Discover status failed (${res.status}).`,
+      }
+    }
+
+    if (!parsed || typeof parsed !== 'object') {
+      return {
+        kind: 'bad_response',
+        httpStatus: res.status,
+        message: 'Empty response from resolve server.',
+      }
+    }
+    const body = parsed as Record<string, unknown>
+    if (body.ok !== true) {
+      const error = typeof body.error === 'string' ? body.error : 'no_results'
+      const message = typeof body.message === 'string' ? body.message : 'Discover status was rejected.'
+      return { kind: 'business_error', error, message }
+    }
+    const status = body.status
+    const id = body.job_id
+    if (
+      typeof id !== 'string' ||
+      (status !== 'queued' && status !== 'running' && status !== 'succeeded' && status !== 'failed')
+    ) {
+      return {
+        kind: 'bad_response',
+        httpStatus: res.status,
+        message: 'Discover status response missing valid job_id or status.',
+      }
+    }
+    const error = typeof body.error === 'string' ? body.error : null
+    return {
+      kind: 'success',
+      data: {
+        job_id: id,
+        status,
+        suggestions: parseDiscoverSuggestions(body),
+        error,
+      },
+    }
+  } catch (e) {
+    return {
+      kind: 'network',
+      message: e instanceof Error ? e.message : 'Network error while contacting resolve server.',
+    }
+  }
+}
+
 /** Portable catalog for POST /api/user/sources/import (see news_manager.user_sources_catalog). */
 export type UserSourcesImportCatalog = {
   schema_version?: number

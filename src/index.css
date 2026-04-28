@@ -1361,8 +1361,70 @@ code {
 
 .settings-add-source-action {
   display: flex;
+  gap: 0.5rem;
   justify-content: flex-end;
   margin-top: 1rem;
+}
+
+.ai-discover-status {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.ai-discover-results {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.ai-discover-results__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.ai-discover-results__header p {
+  margin: 0;
+}
+
+.ai-discover-results__list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 0.75rem;
+}
+
+.ai-discover-result-card {
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: color-mix(in srgb, var(--surface) 70%, var(--bg));
+  padding: 0.75rem;
+  display: grid;
+  gap: 0.5rem;
+}
+
+.ai-discover-result-card__title {
+  margin: 0;
+  font-size: 1rem;
+}
+
+.ai-discover-result-card__url,
+.ai-discover-result-card__why {
+  margin: 0;
+}
+
+.ai-discover-result-card__actions {
+  display: flex;
+  gap: 0.5rem;
+  align-items: end;
+  justify-content: space-between;
+}
+
+.ai-discover-result-card__actions .field {
+  margin: 0;
+  min-width: 0;
+  flex: 1;
 }
 
 /* Closed <dialog> must stay hidden: never set display on .modal-dialog alone — it overrides the UA `display: none`. */
