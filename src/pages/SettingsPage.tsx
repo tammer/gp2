@@ -30,12 +30,16 @@ function CategoryDetailPane({
   uid,
   onReload,
   getAccessToken,
+  forceRenameToken = 0,
+  forceDeleteToken = 0,
 }: {
   category: Category
   sources: Source[]
   uid: string
   onReload: () => void
   getAccessToken: () => Promise<string | null>
+  forceRenameToken?: number
+  forceDeleteToken?: number
 }) {
   const [renaming, setRenaming] = useState(false)
   const [nameDraft, setNameDraft] = useState(category.name)
@@ -64,6 +68,12 @@ function CategoryDetailPane({
   useEffect(() => {
     if (!instrEditing) setInstrDraft(category.instruction)
   }, [category.instruction, instrEditing])
+
+  useEffect(() => {
+    if (forceRenameToken <= 0) return
+    setRenameError(null)
+    setRenaming(true)
+  }, [forceRenameToken])
 
   async function saveRename(e: FormEvent) {
     e.preventDefault()
@@ -142,6 +152,11 @@ function CategoryDetailPane({
     onReload()
   }
 
+  useEffect(() => {
+    if (forceDeleteToken <= 0) return
+    void deleteCategory()
+  }, [forceDeleteToken])
+
   async function loadExclusionsIfNeeded() {
     if (!supabase || exclStatus === 'loading' || exclStatus === 'done') return
     setExclStatus('loading')
@@ -198,22 +213,6 @@ function CategoryDetailPane({
               <h2 id={`cat-heading-${category.id}`} className="settings-category__title">
                 {category.name}
               </h2>
-              <p className="settings-category__meta muted">
-                {sources.length} source{sources.length === 1 ? '' : 's'}
-              </p>
-            </div>
-            <div className="settings-category__header-toolbar">
-              <button type="button" className="btn btn--secondary btn--small" onClick={() => setRenaming(true)} disabled={deleteBusy}>
-                Rename
-              </button>
-              <button
-                type="button"
-                className="btn btn--ghost btn--small settings-category__delete-btn"
-                onClick={() => void deleteCategory()}
-                disabled={deleteBusy}
-              >
-                {deleteBusy ? 'Deleting…' : 'Delete category'}
-              </button>
             </div>
           </>
         )}
@@ -224,166 +223,176 @@ function CategoryDetailPane({
         </p>
       ) : null}
 
-      <div className="settings-category__section">
-        <section
-          className="settings-instructions-panel"
-          aria-labelledby={`instructions-heading-${category.id}`}
-        >
-          <div className="settings-instructions-panel__header">
-            <div className="settings-instructions-panel__intro">
-              <h3 id={`instructions-heading-${category.id}`} className="settings-instructions-panel__title">
-                Instructions
-              </h3>
+      <details className="settings-category__section settings-section-toggle settings-section-toggle--instructions">
+        <summary className="settings-section-toggle__summary">Instructions</summary>
+        <div className="settings-section-toggle__body">
+          <section
+            className="settings-instructions-panel"
+            aria-labelledby={`instructions-heading-${category.id}`}
+          >
+            <div className="settings-instructions-panel__header">
+              <div className="settings-instructions-panel__intro">
+                <h3 id={`instructions-heading-${category.id}`} className="settings-instructions-panel__title">
+                  Instructions
+                </h3>
+                {!instrEditing ? (
+                  <p className="settings-instructions-panel__lead muted">
+                    These instructions guide which articles are included for this category.
+                  </p>
+                ) : null}
+              </div>
               {!instrEditing ? (
-                <p className="settings-instructions-panel__lead muted">
-                  These instructions guide which articles are included for this category.
-                </p>
-              ) : null}
-            </div>
-            {!instrEditing ? (
-              <div className="settings-instructions-panel__actions">
-                <button
-                  type="button"
-                  className={`btn btn--small${hasInstruction ? ' btn--secondary' : ' btn--primary'}`}
-                  disabled={deleteBusy}
-                  onClick={() => {
-                    setInstrSuccess(null)
-                    setInstrEditing(true)
-                  }}
-                >
-                  {hasInstruction ? 'Edit instructions' : 'Add instructions'}
-                </button>
-              </div>
-            ) : null}
-          </div>
-          {instrEditing ? (
-            <form className="form-stack settings-instructions-panel__body" onSubmit={saveInstruction}>
-              <label className="field instruction-field-grow">
-                <span className="field__label">Markdown</span>
-                <textarea
-                  className="textarea textarea--instruction"
-                  rows={10}
-                  value={instrDraft}
-                  onChange={(e) => setInstrDraft(e.target.value)}
-                  spellCheck
-                />
-              </label>
-              {instrError ? (
-                <p className="form-error" role="alert">
-                  {instrError}
-                </p>
-              ) : null}
-              <div className="form-actions">
-                <button type="submit" className="btn btn--primary" disabled={instrBusy || deleteBusy}>
-                  {instrBusy ? 'Saving…' : 'Save'}
-                </button>
-                <button
-                  type="button"
-                  className="btn btn--ghost"
-                  disabled={instrBusy || deleteBusy}
-                  onClick={() => {
-                    setInstrDraft(category.instruction)
-                    setInstrError(null)
-                    setInstrEditing(false)
-                  }}
-                >
-                  Cancel
-                </button>
-              </div>
-            </form>
-          ) : (
-            <div className="instruction-view settings-instructions-panel__body">
-              {instrSuccess ? (
-                <p className="form-success" role="status">
-                  {instrSuccess}
-                </p>
-              ) : null}
-              {hasInstruction ? (
-                <div className="instruction-markdown">
-                  <ReactMarkdown
-                    remarkPlugins={[remarkGfm]}
-                    rehypePlugins={[rehypeSanitize]}
-                    components={{
-                      a: ({ href, children, ...props }) => (
-                        <a href={href} target="_blank" rel="noopener noreferrer" {...props}>
-                          {children}
-                        </a>
-                      ),
+                <div className="settings-instructions-panel__actions">
+                  <button
+                    type="button"
+                    className={`btn btn--small${hasInstruction ? ' btn--secondary' : ' btn--primary'}`}
+                    disabled={deleteBusy}
+                    onClick={() => {
+                      setInstrSuccess(null)
+                      setInstrEditing(true)
                     }}
                   >
-                    {category.instruction}
-                  </ReactMarkdown>
+                    {hasInstruction ? 'Edit instructions' : 'Add instructions'}
+                  </button>
                 </div>
               ) : null}
             </div>
-          )}
-        </section>
-      </div>
-
-      <div className="settings-category__section">
-        <h3 className="settings-category__subheading">Sources</h3>
-        {sources.length === 0 ? (
-          <p className="muted">No sources in this category yet.</p>
-        ) : (
-          <div className="sources-table-wrap">
-            <table className="sources-table">
-              <caption className="sr-only">Sources in {category.name}</caption>
-              <thead>
-                <tr>
-                  <th scope="col">URL</th>
-                  <th scope="col">RSS</th>
-                  <th scope="col">Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {sources.map((s) => (
-                  <tr key={s.id}>
-                    <td className="sources-table__url">
-                      <a href={s.url} target="_blank" rel="noopener noreferrer" title={s.url}>
-                        {s.url}
-                      </a>
-                    </td>
-                    <td>{s.use_rss ? 'Yes' : 'No'}</td>
-                    <td className="sources-table__actions">
-                      <button
-                        type="button"
-                        className="btn btn--ghost btn--small"
-                        disabled={deleteBusy}
-                        onClick={() => void removeSource(s.id)}
-                      >
-                        Delete
-                      </button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )}
-        {sourceActionError ? (
-          <p className="form-error" role="alert">
-            {sourceActionError}
-          </p>
-        ) : null}
-        <div className="settings-add-source-action">
-          <button type="button" className="btn btn--primary" onClick={() => setAddSourceOpen(true)} disabled={deleteBusy}>
-            Add source
-          </button>
+            {instrEditing ? (
+              <form className="form-stack settings-instructions-panel__body" onSubmit={saveInstruction}>
+                <label className="field instruction-field-grow">
+                  <span className="field__label">Markdown</span>
+                  <textarea
+                    className="textarea textarea--instruction"
+                    rows={10}
+                    value={instrDraft}
+                    onChange={(e) => setInstrDraft(e.target.value)}
+                    spellCheck
+                  />
+                </label>
+                {instrError ? (
+                  <p className="form-error" role="alert">
+                    {instrError}
+                  </p>
+                ) : null}
+                <div className="form-actions">
+                  <button type="submit" className="btn btn--primary" disabled={instrBusy || deleteBusy}>
+                    {instrBusy ? 'Saving…' : 'Save'}
+                  </button>
+                  <button
+                    type="button"
+                    className="btn btn--ghost"
+                    disabled={instrBusy || deleteBusy}
+                    onClick={() => {
+                      setInstrDraft(category.instruction)
+                      setInstrError(null)
+                      setInstrEditing(false)
+                    }}
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </form>
+            ) : (
+              <div className="instruction-view settings-instructions-panel__body">
+                {instrSuccess ? (
+                  <p className="form-success" role="status">
+                    {instrSuccess}
+                  </p>
+                ) : null}
+                {hasInstruction ? (
+                  <div className="instruction-markdown">
+                    <ReactMarkdown
+                      remarkPlugins={[remarkGfm]}
+                      rehypePlugins={[rehypeSanitize]}
+                      components={{
+                        a: ({ href, children, ...props }) => (
+                          <a href={href} target="_blank" rel="noopener noreferrer" {...props}>
+                            {children}
+                          </a>
+                        ),
+                      }}
+                    >
+                      {category.instruction}
+                    </ReactMarkdown>
+                  </div>
+                ) : null}
+              </div>
+            )}
+          </section>
         </div>
-        <AddSourceModal
-          open={addSourceOpen}
-          onClose={() => setAddSourceOpen(false)}
-          categoryId={category.id}
-          categoryLabel={category.name}
-          userId={uid}
-          getAccessToken={getAccessToken}
-          onSuccess={onReload}
-        />
-      </div>
+      </details>
 
-      <details className="settings-exclusions" onToggle={onExclusionsToggle}>
-        <summary className="settings-exclusions__summary">Recent exclusions (10 newest)</summary>
-        <div className="settings-exclusions__body">
+      <details className="settings-category__section settings-section-toggle settings-section-toggle--sources">
+        <summary className="settings-section-toggle__summary">
+          Sources
+          <span className="settings-section-toggle__count muted">
+            ({sources.length})
+          </span>
+        </summary>
+        <div className="settings-section-toggle__body">
+          {sources.length === 0 ? (
+            <p className="muted">No sources in this category yet.</p>
+          ) : (
+            <div className="sources-table-wrap">
+              <table className="sources-table">
+                <caption className="sr-only">Sources in {category.name}</caption>
+                <thead>
+                  <tr>
+                    <th scope="col">URL</th>
+                    <th scope="col">RSS</th>
+                    <th scope="col">Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {sources.map((s) => (
+                    <tr key={s.id}>
+                      <td className="sources-table__url">
+                        <a href={s.url} target="_blank" rel="noopener noreferrer" title={s.url}>
+                          {s.url}
+                        </a>
+                      </td>
+                      <td>{s.use_rss ? 'Yes' : 'No'}</td>
+                      <td className="sources-table__actions">
+                        <button
+                          type="button"
+                          className="btn btn--ghost btn--small"
+                          disabled={deleteBusy}
+                          onClick={() => void removeSource(s.id)}
+                        >
+                          Delete
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+          {sourceActionError ? (
+            <p className="form-error" role="alert">
+              {sourceActionError}
+            </p>
+          ) : null}
+          <div className="settings-add-source-action">
+            <button type="button" className="btn btn--primary" onClick={() => setAddSourceOpen(true)} disabled={deleteBusy}>
+              Add source
+            </button>
+          </div>
+          <AddSourceModal
+            open={addSourceOpen}
+            onClose={() => setAddSourceOpen(false)}
+            categoryId={category.id}
+            categoryLabel={category.name}
+            userId={uid}
+            getAccessToken={getAccessToken}
+            onSuccess={onReload}
+          />
+        </div>
+      </details>
+
+      <details className="settings-exclusions settings-section-toggle" onToggle={onExclusionsToggle}>
+        <summary className="settings-exclusions__summary settings-section-toggle__summary">Recent exclusions (10 newest)</summary>
+        <div className="settings-exclusions__body settings-section-toggle__body">
           {exclStatus === 'loading' ? (
             <p className="muted">Loading…</p>
           ) : exclError ? (
@@ -431,6 +440,10 @@ export function SettingsScreen({ embedded = false, titleId }: SettingsScreenProp
   const [error, setError] = useState<string | null>(null)
 
   const [selectedId, setSelectedId] = useState<string | null>(null)
+  const [renameRequestId, setRenameRequestId] = useState<string | null>(null)
+  const [renameRequestToken, setRenameRequestToken] = useState(0)
+  const [deleteRequestId, setDeleteRequestId] = useState<string | null>(null)
+  const [deleteRequestToken, setDeleteRequestToken] = useState(0)
 
   const [newCatName, setNewCatName] = useState('')
   const [newCatInstruction, setNewCatInstruction] = useState('')
@@ -536,6 +549,18 @@ export function SettingsScreen({ embedded = false, titleId }: SettingsScreenProp
     setAddCatError(null)
     setNewCatName('')
     setNewCatInstruction('')
+  }
+
+  function openCategoryRename(categoryId: string) {
+    setSelectedId(categoryId)
+    setRenameRequestId(categoryId)
+    setRenameRequestToken((token) => token + 1)
+  }
+
+  function openCategoryDelete(categoryId: string) {
+    setSelectedId(categoryId)
+    setDeleteRequestId(categoryId)
+    setDeleteRequestToken((token) => token + 1)
   }
 
   const loadCategories = useCallback(async () => {
@@ -797,16 +822,48 @@ export function SettingsScreen({ embedded = false, titleId }: SettingsScreenProp
           <aside className="settings-sidebar" aria-label="Category list">
             <nav className="settings-nav" aria-label="Categories">
               {categories.map((c) => (
-                <button
-                  key={c.id}
-                  type="button"
-                  className={`settings-nav__item${selectedId === c.id ? ' settings-nav__item--active' : ''}`}
-                  aria-current={selectedId === c.id ? 'page' : undefined}
-                  aria-controls="settings-category-detail"
-                  onClick={() => setSelectedId(c.id)}
-                >
-                  {c.name}
-                </button>
+                <div key={c.id} className={`settings-nav__row${selectedId === c.id ? ' settings-nav__row--active' : ''}`}>
+                  <button
+                    type="button"
+                    className={`settings-nav__item${selectedId === c.id ? ' settings-nav__item--active' : ''}`}
+                    aria-current={selectedId === c.id ? 'page' : undefined}
+                    aria-controls="settings-category-detail"
+                    onClick={() => setSelectedId(c.id)}
+                  >
+                    {c.name}
+                  </button>
+                  <details className="settings-nav__menu">
+                    <summary className="settings-nav__menu-trigger" aria-label={`Category actions for ${c.name}`}>
+                      <span aria-hidden>...</span>
+                    </summary>
+                    <div className="settings-nav__menu-popover" role="menu" aria-label={`Actions for ${c.name}`}>
+                      <button
+                        type="button"
+                        className="settings-nav__menu-item"
+                        role="menuitem"
+                        onClick={(e) => {
+                          e.preventDefault()
+                          ;(e.currentTarget.closest('details') as HTMLDetailsElement | null)?.removeAttribute('open')
+                          openCategoryRename(c.id)
+                        }}
+                      >
+                        Rename
+                      </button>
+                      <button
+                        type="button"
+                        className="settings-nav__menu-item settings-nav__menu-item--danger"
+                        role="menuitem"
+                        onClick={(e) => {
+                          e.preventDefault()
+                          ;(e.currentTarget.closest('details') as HTMLDetailsElement | null)?.removeAttribute('open')
+                          openCategoryDelete(c.id)
+                        }}
+                      >
+                        Delete
+                      </button>
+                    </div>
+                  </details>
+                </div>
               ))}
             </nav>
             <div className="settings-sidebar__footer">
@@ -834,6 +891,8 @@ export function SettingsScreen({ embedded = false, titleId }: SettingsScreenProp
                 uid={user.id}
                 onReload={() => void reload()}
                 getAccessToken={getAccessToken}
+                forceRenameToken={renameRequestId === selectedCategory.id ? renameRequestToken : 0}
+                forceDeleteToken={deleteRequestId === selectedCategory.id ? deleteRequestToken : 0}
               />
             ) : (
               <div className="card settings-detail settings-detail--empty">
