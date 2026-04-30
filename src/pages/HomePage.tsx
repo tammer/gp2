@@ -113,7 +113,7 @@ export function HomePage() {
       )
       .eq('user_id', uid)
       .eq('category_id', categoryId)
-      .order('updated_at', { ascending: false, nullsFirst: false })
+      .order('article_date', { ascending: false, nullsFirst: false })
 
     if (listView === 'unread') q = q.eq('read', false)
     else if (listView === 'read') q = q.eq('read', true)
