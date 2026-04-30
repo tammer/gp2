@@ -3,6 +3,7 @@ import { Link, Navigate } from 'react-router-dom'
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
 import rehypeSanitize from 'rehype-sanitize'
+import { AIAddSourceModal } from '@/components/AIAddSourceModal'
 import { AddSourceModal } from '@/components/AddSourceModal'
 import tammerFiltersCatalog from '@/data/tammer-filters-catalog.json'
 import { pollPipelineJobUntilTerminal } from '@/lib/pipeline-api'
@@ -30,6 +31,7 @@ function CategoryDetailPane({
   uid,
   onReload,
   getAccessToken,
+  categories,
   forceRenameToken = 0,
   forceDeleteToken = 0,
 }: {
@@ -38,6 +40,7 @@ function CategoryDetailPane({
   uid: string
   onReload: () => void
   getAccessToken: () => Promise<string | null>
+  categories: Category[]
   forceRenameToken?: number
   forceDeleteToken?: number
 }) {
@@ -53,6 +56,7 @@ function CategoryDetailPane({
   const [instrSuccess, setInstrSuccess] = useState<string | null>(null)
 
   const [addSourceOpen, setAddSourceOpen] = useState(false)
+  const [addSourceAiOpen, setAddSourceAiOpen] = useState(false)
   const [sourceActionError, setSourceActionError] = useState<string | null>(null)
   const [deleteBusy, setDeleteBusy] = useState(false)
   const [deleteError, setDeleteError] = useState<string | null>(null)
@@ -223,6 +227,86 @@ function CategoryDetailPane({
         </p>
       ) : null}
 
+      <details className="settings-category__section settings-section-toggle settings-section-toggle--sources">
+        <summary className="settings-section-toggle__summary">
+          Sources
+          <span className="settings-section-toggle__count muted">
+            ({sources.length})
+          </span>
+        </summary>
+        <div className="settings-section-toggle__body">
+          {sources.length === 0 ? (
+            <p className="muted">No sources in this category yet.</p>
+          ) : (
+            <div className="sources-table-wrap">
+              <table className="sources-table">
+                <caption className="sr-only">Sources in {category.name}</caption>
+                <thead>
+                  <tr>
+                    <th scope="col">URL</th>
+                    <th scope="col">RSS</th>
+                    <th scope="col">Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {sources.map((s) => (
+                    <tr key={s.id}>
+                      <td className="sources-table__url">
+                        <a href={s.url} target="_blank" rel="noopener noreferrer" title={s.url}>
+                          {s.url}
+                        </a>
+                      </td>
+                      <td>{s.use_rss ? 'Yes' : 'No'}</td>
+                      <td className="sources-table__actions">
+                        <button
+                          type="button"
+                          className="btn btn--ghost btn--small"
+                          disabled={deleteBusy}
+                          onClick={() => void removeSource(s.id)}
+                        >
+                          Delete
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+          {sourceActionError ? (
+            <p className="form-error" role="alert">
+              {sourceActionError}
+            </p>
+          ) : null}
+        </div>
+      </details>
+      <div className="settings-add-source-action">
+        <button type="button" className="btn btn--primary" onClick={() => setAddSourceOpen(true)} disabled={deleteBusy}>
+          Add Specific Source
+        </button>
+        <button type="button" className="btn btn--secondary" onClick={() => setAddSourceAiOpen(true)} disabled={deleteBusy}>
+          AI
+        </button>
+      </div>
+      <AddSourceModal
+        open={addSourceOpen}
+        onClose={() => setAddSourceOpen(false)}
+        categoryId={category.id}
+        categoryLabel={category.name}
+        userId={uid}
+        getAccessToken={getAccessToken}
+        onSuccess={onReload}
+      />
+      <AIAddSourceModal
+        open={addSourceAiOpen}
+        onClose={() => setAddSourceAiOpen(false)}
+        userId={uid}
+        categories={categories.map((c) => ({ id: c.id, name: c.name }))}
+        defaultCategoryId={category.id}
+        getAccessToken={getAccessToken}
+        onSuccess={onReload}
+      />
+
       <details className="settings-category__section settings-section-toggle settings-section-toggle--instructions">
         <summary className="settings-section-toggle__summary">Instructions</summary>
         <div className="settings-section-toggle__body">
@@ -319,74 +403,6 @@ function CategoryDetailPane({
               </div>
             )}
           </section>
-        </div>
-      </details>
-
-      <details className="settings-category__section settings-section-toggle settings-section-toggle--sources">
-        <summary className="settings-section-toggle__summary">
-          Sources
-          <span className="settings-section-toggle__count muted">
-            ({sources.length})
-          </span>
-        </summary>
-        <div className="settings-section-toggle__body">
-          {sources.length === 0 ? (
-            <p className="muted">No sources in this category yet.</p>
-          ) : (
-            <div className="sources-table-wrap">
-              <table className="sources-table">
-                <caption className="sr-only">Sources in {category.name}</caption>
-                <thead>
-                  <tr>
-                    <th scope="col">URL</th>
-                    <th scope="col">RSS</th>
-                    <th scope="col">Actions</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {sources.map((s) => (
-                    <tr key={s.id}>
-                      <td className="sources-table__url">
-                        <a href={s.url} target="_blank" rel="noopener noreferrer" title={s.url}>
-                          {s.url}
-                        </a>
-                      </td>
-                      <td>{s.use_rss ? 'Yes' : 'No'}</td>
-                      <td className="sources-table__actions">
-                        <button
-                          type="button"
-                          className="btn btn--ghost btn--small"
-                          disabled={deleteBusy}
-                          onClick={() => void removeSource(s.id)}
-                        >
-                          Delete
-                        </button>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )}
-          {sourceActionError ? (
-            <p className="form-error" role="alert">
-              {sourceActionError}
-            </p>
-          ) : null}
-          <div className="settings-add-source-action">
-            <button type="button" className="btn btn--primary" onClick={() => setAddSourceOpen(true)} disabled={deleteBusy}>
-              Add source
-            </button>
-          </div>
-          <AddSourceModal
-            open={addSourceOpen}
-            onClose={() => setAddSourceOpen(false)}
-            categoryId={category.id}
-            categoryLabel={category.name}
-            userId={uid}
-            getAccessToken={getAccessToken}
-            onSuccess={onReload}
-          />
         </div>
       </details>
 
@@ -891,6 +907,7 @@ export function SettingsScreen({ embedded = false, titleId }: SettingsScreenProp
                 uid={user.id}
                 onReload={() => void reload()}
                 getAccessToken={getAccessToken}
+                categories={categories}
                 forceRenameToken={renameRequestId === selectedCategory.id ? renameRequestToken : 0}
                 forceDeleteToken={deleteRequestId === selectedCategory.id ? deleteRequestToken : 0}
               />

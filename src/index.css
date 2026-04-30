@@ -1458,7 +1458,7 @@ code {
 .settings-add-source-action {
   display: flex;
   gap: 0.5rem;
-  justify-content: flex-end;
+  justify-content: flex-start;
   margin-top: 1rem;
 }
 
