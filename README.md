@@ -1,6 +1,7 @@
 # Gistprism v2
 
 Web app for personalized news articles backed by **Supabase** (Postgres + Auth + Row Level Security). See [spec.md](spec.md) for full product requirements.
+(Touch)
 
 ## Stack
 
